@@ -1,0 +1,2943 @@
+<!doctype html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="color-scheme" content="light dark">
+  <title>Merger</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icon-32x32.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icon-192x192.png">
+  <style>
+    :root {
+      --bg-top: #f6f8ff;
+      --bg-bottom: #e4edf8;
+      --glass: rgba(255, 255, 255, .56);
+      --glass-strong: rgba(255, 255, 255, .72);
+      --text: #111827;
+      --muted: #5b6474;
+      --line: rgba(255, 255, 255, .6);
+      --accent: #0a84ff;
+      --accent-soft: rgba(10, 132, 255, .16);
+      --drop: rgba(255, 255, 255, .46);
+      --ok: #0f7a2a;
+      --warn: #9a6c00;
+      --error: #b42318;
+      --shadow: 0 18px 48px rgba(14, 29, 58, .16);
+      --inner: inset 0 1px 0 rgba(255,255,255,.65);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-top: #131722;
+        --bg-bottom: #0b0f18;
+        --glass: rgba(22, 28, 42, .62);
+        --glass-strong: rgba(27, 35, 52, .76);
+        --text: #e7edf7;
+        --muted: #a8b5cb;
+        --line: rgba(205, 219, 246, .18);
+        --accent: #5fb0ff;
+        --accent-soft: rgba(95, 176, 255, .18);
+        --drop: rgba(18, 23, 35, .72);
+        --ok: #75d795;
+        --warn: #ffcf69;
+        --error: #ff9f97;
+        --shadow: 0 20px 54px rgba(0,0,0,.45);
+        --inner: inset 0 1px 0 rgba(255,255,255,.06);
+      }
+    }
+    html[data-theme="light"] {
+      --bg-top: #f6f8ff;
+      --bg-bottom: #e4edf8;
+      --glass: rgba(255, 255, 255, .9);
+      --glass-strong: rgba(255, 255, 255, .96);
+      --text: #111827;
+      --muted: #5b6474;
+      --line: rgba(32, 54, 94, .24);
+      --accent: #0a84ff;
+      --accent-soft: rgba(10, 132, 255, .16);
+      --drop: rgba(255, 255, 255, .92);
+      --ok: #0f7a2a;
+      --warn: #9a6c00;
+      --error: #b42318;
+      --shadow: 0 18px 42px rgba(14, 29, 58, .22);
+      --inner: inset 0 1px 0 rgba(255,255,255,.9);
+    }
+    html[data-theme="dark"] {
+      --bg-top: #131722;
+      --bg-bottom: #0b0f18;
+      --glass: rgba(22, 28, 42, .62);
+      --glass-strong: rgba(27, 35, 52, .76);
+      --text: #e7edf7;
+      --muted: #a8b5cb;
+      --line: rgba(205, 219, 246, .18);
+      --accent: #5fb0ff;
+      --accent-soft: rgba(95, 176, 255, .18);
+      --drop: rgba(18, 23, 35, .72);
+      --ok: #75d795;
+      --warn: #ffcf69;
+      --error: #ff9f97;
+      --shadow: 0 20px 54px rgba(0,0,0,.45);
+      --inner: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 16px/1.45 "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background:
+        radial-gradient(1100px 700px at 12% -10%, rgba(110, 190, 255, .35), transparent 55%),
+        radial-gradient(900px 520px at 90% 0%, rgba(255, 145, 186, .24), transparent 58%),
+        linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+      color: var(--text);
+      min-height: 100svh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, rgba(255,255,255,.22) 0%, transparent 45%);
+      z-index: 0;
+    }
+    .app {
+      width: min(1380px, 100%);
+      margin: 0 auto;
+      padding: clamp(14px, 2.6vw, 28px);
+      position: relative;
+      z-index: 1;
+      transition: filter .2s ease;
+    }
+    .cards-layout {
+      display: grid;
+      gap: 18px;
+      align-items: start;
+      margin-top: 18px;
+    }
+    @media (min-width: 1100px) {
+      .cards-layout {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .cards-layout .card-head {
+      margin-bottom: 0;
+    }
+    .cards-layout .card-head + .grid,
+    .cards-layout .card-head + .field {
+      margin-top: 18px;
+    }
+    body.dialog-active .app {
+      filter: blur(6px) saturate(.92);
+      pointer-events: none;
+      user-select: none;
+    }
+    .card {
+      background: linear-gradient(145deg, var(--glass-strong), var(--glass));
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow), var(--inner);
+      backdrop-filter: blur(24px) saturate(165%);
+      -webkit-backdrop-filter: blur(24px) saturate(165%);
+      padding: clamp(16px, 2.2vw, 26px);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .settings-trigger {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--glass) 88%, transparent);
+      box-shadow: var(--inner);
+      color: inherit;
+      font: inherit;
+      font-size: 1.15rem;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 2vw + 1rem, 2.1rem);
+      line-height: 1.1;
+      letter-spacing: -.01em;
+    }
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+    .drop {
+      border: 1.5px dashed color-mix(in srgb, var(--accent) 28%, var(--line));
+      border-radius: 18px;
+      min-height: 220px;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      text-align: center;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--drop) 80%, transparent), var(--drop));
+      box-shadow: var(--inner);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+    .drop.awaiting-file {
+      border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent), 0 8px 18px color-mix(in srgb, var(--accent) 12%, transparent), var(--inner);
+    }
+    .drop.dragover {
+      border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 55%, var(--drop)), var(--drop));
+      box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 18%, transparent), var(--inner);
+      transform: translateY(-1px) scale(1.005);
+    }
+    .drop strong {
+      display: block;
+      font-size: 1.2rem;
+      margin-bottom: 6px;
+    }
+    .filename {
+      margin-top: 8px;
+      font-weight: 700;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .drop-content {
+      width: 100%;
+      max-width: 640px;
+    }
+    .file-list {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+      text-align: left;
+    }
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: color-mix(in srgb, var(--glass) 84%, transparent);
+      box-shadow: var(--inner);
+      cursor: grab;
+      transition: border-color .15s ease, opacity .15s ease;
+    }
+    .file-item.dragging {
+      opacity: .48;
+      cursor: grabbing;
+    }
+    .file-item.drop-before {
+      border-top: 3px solid color-mix(in srgb, var(--accent) 80%, var(--line));
+      padding-top: 6px;
+    }
+    .file-item.drop-after {
+      border-bottom: 3px solid color-mix(in srgb, var(--accent) 80%, var(--line));
+      padding-bottom: 6px;
+    }
+    .file-drag {
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: .02em;
+      user-select: none;
+      flex: 0 0 auto;
+    }
+    .file-item-name {
+      min-width: 0;
+      flex: 1 1 auto;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file-delete {
+      width: 30px;
+      height: 30px;
+      border: 1px solid color-mix(in srgb, var(--line) 85%, var(--error));
+      border-radius: 9px;
+      background: color-mix(in srgb, var(--glass) 80%, transparent);
+      box-shadow: var(--inner);
+      color: var(--error);
+      font-size: 1rem;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      flex: 0 0 auto;
+      transition: transform .16s ease, background .16s ease;
+    }
+    .file-delete:hover {
+      transform: translateY(-1px);
+      background: color-mix(in srgb, var(--error) 12%, var(--glass));
+    }
+    .card-title {
+      margin: 0;
+      font-size: clamp(1.24rem, 1.5vw + .86rem, 1.65rem);
+      line-height: 1.15;
+      letter-spacing: -.01em;
+    }
+    .card-subtitle {
+      margin: 2px 0 14px;
+      color: var(--muted);
+      font-size: .94rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-top: 18px;
+    }
+    @media (min-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .grid > .field:only-child {
+        grid-column: 1 / -1;
+      }
+    }
+    .field {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      min-height: 100%;
+      background: color-mix(in srgb, var(--glass) 85%, transparent);
+      box-shadow: var(--inner);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .field.options-disabled {
+      opacity: .52;
+    }
+    .field.options-disabled .pages button,
+    .field.options-disabled input,
+    .field.options-disabled .padding-choice label {
+      cursor: not-allowed;
+    }
+    .pages button:disabled {
+      opacity: .7;
+      transform: none;
+    }
+    .pages button:disabled:hover {
+      transform: none;
+    }
+    input[type="number"]:disabled,
+    input[type="radio"]:disabled {
+      opacity: .7;
+    }
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      display: block;
+      color: inherit;
+    }
+    .setting-group {
+      margin-top: 18px;
+    }
+    .pages {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, 112px);
+      justify-content: center;
+      gap: 10px;
+    }
+    .pages button {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--glass) 85%, transparent);
+      box-shadow: var(--inner);
+      color: inherit;
+      width: 112px;
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+      font: inherit;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+    .page-option {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+    .pages button.active {
+      border: 1px solid color-mix(in srgb, var(--accent) 70%, var(--line));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 88%, transparent), color-mix(in srgb, var(--glass) 92%, transparent));
+      font-weight: 700;
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 18%, transparent), var(--inner);
+    }
+    .pages button:hover {
+      transform: translateY(-1px);
+    }
+    .mini-sheet {
+      width: 84px;
+      height: 84px;
+      margin: 0;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      padding: 4px;
+      border: 1.6px solid color-mix(in srgb, var(--line) 82%, transparent);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--glass) 75%, transparent);
+      overflow: hidden;
+    }
+    .mini-sheet span {
+      display: grid;
+      place-items: center;
+      border: 1.6px solid color-mix(in srgb, var(--line) 72%, transparent);
+      font-size: .92rem;
+      line-height: 1;
+      color: var(--accent);
+      font-weight: 700;
+      background: color-mix(in srgb, var(--accent-soft) 22%, var(--glass));
+      min-height: 0;
+    }
+    .stack-2 .mini-sheet { grid-template-rows: repeat(1, 1fr); }
+    .stack-4 .mini-sheet { grid-template-rows: repeat(2, 1fr); }
+    .stack-6 .mini-sheet { grid-template-rows: repeat(3, 1fr); }
+    .stack-8 .mini-sheet { grid-template-rows: repeat(4, 1fr); }
+    .pages button.special-toggle {
+      padding: 14px 12px;
+    }
+    .pages button.special-toggle[aria-pressed="true"] {
+      border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 88%, transparent), color-mix(in srgb, var(--glass) 92%, transparent));
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 18%, transparent), var(--inner);
+    }
+    .special-icon {
+      width: 84px;
+      height: 84px;
+      display: grid;
+      align-content: center;
+      gap: 6px;
+    }
+    .special-sheet {
+      border: 1.6px solid color-mix(in srgb, var(--line) 82%, transparent);
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--glass) 75%, transparent);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      padding: 3px;
+      min-height: 24px;
+    }
+    .special-sheet span {
+      display: grid;
+      place-items: center;
+      border: 1.6px solid color-mix(in srgb, var(--line) 72%, transparent);
+      font-size: .92rem;
+      line-height: 1;
+      color: var(--accent);
+      font-weight: 700;
+      background: color-mix(in srgb, var(--accent-soft) 22%, var(--glass));
+      min-height: 0;
+    }
+    label {
+      display: block;
+      font-size: .95rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: color-mix(in srgb, var(--glass) 78%, transparent);
+      box-shadow: var(--inner);
+      color: inherit;
+      font: inherit;
+    }
+    #studentCount {
+      width: 8ch;
+      min-width: 8ch;
+      max-width: 100%;
+    }
+    input[type="radio"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 1.02rem;
+      height: 1.02rem;
+      border-radius: 50%;
+      border: 2px solid color-mix(in srgb, var(--line) 85%, var(--text));
+      background: transparent;
+      display: inline-grid;
+      place-content: center;
+      margin: 0;
+      flex: 0 0 auto;
+    }
+    input[type="radio"]::before {
+      content: "";
+      width: .5rem;
+      height: .5rem;
+      border-radius: 50%;
+      background: var(--accent);
+      transform: scale(0);
+      transition: transform .14s ease;
+    }
+    input[type="radio"]:checked::before {
+      transform: scale(1);
+    }
+    .padding-choice {
+      margin-top: 12px;
+      display: grid;
+      gap: 8px;
+      color: inherit;
+    }
+    .padding-choice label {
+      margin: 0;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+    }
+    .start {
+      border: 1px solid color-mix(in srgb, var(--accent) 64%, var(--line));
+      border-radius: 14px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 94%, #fff), color-mix(in srgb, var(--accent) 82%, #0a54d9));
+      color: #fff;
+      padding: 14px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      min-width: 180px;
+      box-shadow: 0 14px 30px color-mix(in srgb, var(--accent) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.35);
+      transition: transform .18s ease, filter .18s ease;
+    }
+    .start:hover {
+      transform: translateY(-1px);
+      filter: saturate(1.08);
+    }
+    .start:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+    .hint {
+      font-size: .92rem;
+      color: var(--muted);
+    }
+    .settings-dialog {
+      margin: auto;
+      width: min(420px, calc(100vw - 24px));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: color-mix(in srgb, var(--bg-top) 92%, #ffffff);
+      box-shadow: var(--shadow);
+      color: inherit;
+    }
+    .settings-dialog::backdrop {
+      background: rgba(6, 10, 20, .38);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .settings-title {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .settings-row {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+    .result-dialog {
+      width: min(460px, calc(100vw - 24px));
+    }
+    .result-message {
+      margin: 0 0 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text);
+    }
+    .result-dialog[data-tone="ok"] .result-message { color: var(--ok); }
+    .result-dialog[data-tone="warn"] .result-message { color: var(--warn); }
+    .result-dialog[data-tone="error"] .result-message { color: var(--error); }
+    .busy-dialog {
+      width: min(360px, calc(100vw - 24px));
+    }
+    .busy-message {
+      margin: 0;
+      color: var(--muted);
+    }
+    .theme-choice {
+      margin: 0 0 14px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      color: inherit;
+    }
+    .theme-choice label {
+      margin: 0;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .update-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-small {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 12px;
+      background: color-mix(in srgb, var(--glass) 88%, transparent);
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      box-shadow: var(--inner);
+    }
+    .btn-small.primary {
+      border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 93%, #fff), color-mix(in srgb, var(--accent) 80%, #0a54d9));
+      color: #fff;
+      font-weight: 700;
+    }
+    button:focus-visible,
+    input:focus-visible,
+    .drop:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 80%, #fff);
+      outline-offset: 2px;
+    }
+    .footer-note {
+      margin-top: 14px;
+      font-size: .88rem;
+      color: var(--muted);
+    }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .hidden { display: none !important; }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 10px;
+      }
+      .card {
+        border-radius: 18px;
+        padding: 14px;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .drop {
+        min-height: 170px;
+        padding: 14px;
+      }
+      .drop strong {
+        font-size: 1.05rem;
+      }
+      .field {
+        padding: 12px;
+      }
+      .pages {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .pages button {
+        width: 100%;
+        min-width: 0;
+        padding: 10px;
+        border-radius: 12px;
+      }
+      .pages button.special-toggle {
+        padding: 10px;
+      }
+      .mini-sheet,
+      .special-icon {
+        width: 72px;
+        height: 72px;
+      }
+      .special-icon {
+        gap: 5px;
+      }
+      .mini-sheet span,
+      .special-sheet span {
+        font-size: .84rem;
+      }
+      #studentCount {
+        width: 100%;
+        max-width: 100%;
+      }
+      .theme-choice {
+        flex-wrap: wrap;
+      }
+      .start {
+        width: 100%;
+        min-width: 0;
+      }
+      .settings-dialog,
+      .result-dialog,
+      .busy-dialog {
+        width: min(100vw - 16px, 460px);
+      }
+    }
+
+    @media (max-width: 420px) {
+      .pages {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .mini-sheet,
+      .special-icon {
+        width: 68px;
+        height: 68px;
+      }
+      .special-sheet span,
+      .mini-sheet span {
+        font-size: .8rem;
+      }
+      .settings-trigger {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <div class="card-head">
+        <h1>Merger</h1>
+        <button id="settingsButton" class="settings-trigger" type="button" aria-label="Einstellungen öffnen">⚙️</button>
+      </div>
+      <div id="dropZone" class="drop" tabindex="0" role="button" aria-label="PDF auswählen">
+        <div class="drop-content">
+          <div id="dropHint">
+            <strong>PDF hierhin ziehen</strong>
+            <div>oder klicken zum Auswählen</div>
+          </div>
+          <div id="fileName" class="filename"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="cards-layout">
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">Seiten zusammenführen</h2>
+        </div>
+        <div class="grid">
+          <section id="optionsPanel" class="field options-disabled" aria-disabled="true">
+            <h2 class="section-title">Seiten pro Blatt</h2>
+            <div class="pages" id="pagesButtons">
+              <button type="button" data-pages="2" class="stack-2 active" aria-pressed="true">
+                <div class="page-option">
+                  <div class="mini-sheet"><span>1</span><span>2</span></div>
+                </div>
+              </button>
+              <button id="specialThreeModeButton" class="special-toggle" type="button" aria-pressed="false" aria-label="Spezialmodus 3 Seiten" title="Nur bei 3-seitiger PDF verfügbar">
+                <div class="special-icon" aria-hidden="true">
+                  <div class="special-sheet"><span>1</span><span>1</span></div>
+                  <div class="special-sheet"><span>2</span><span>3</span></div>
+                </div>
+              </button>
+              <button type="button" data-pages="4" class="stack-4" aria-pressed="false">
+                <div class="page-option">
+                  <div class="mini-sheet"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+                </div>
+              </button>
+              <button type="button" data-pages="6" class="stack-6" aria-pressed="false">
+                <div class="page-option">
+                  <div class="mini-sheet"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>
+                </div>
+              </button>
+              <button type="button" data-pages="8" class="stack-8" aria-pressed="false">
+                <div class="page-option">
+                  <div class="mini-sheet"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
+                </div>
+              </button>
+            </div>
+
+            <div class="setting-group">
+              <label class="section-title" for="studentCount">Anzahl Lernende (optional)</label>
+              <input id="studentCount" type="number" min="1" step="1" placeholder="">
+            </div>
+
+            <div class="setting-group">
+              <div class="section-title">Bei Restseiten</div>
+              <div class="padding-choice" role="radiogroup" aria-label="Bei Restseiten">
+                <label><input type="radio" name="paddingMode" value="blank" checked> Offene Plätze leer lassen</label>
+                <label><input type="radio" name="paddingMode" value="auto"> Offene Plätze mit vorhandenen Seiten auffüllen</label>
+                <label><input type="radio" name="paddingMode" value="lcm"> Offene Plätze mit vorhandenen Seiten auffüllen (bis Kopien für Lernendenanzahl erreicht)</label>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="controls">
+          <button id="startButton" class="start" type="button">Start</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">PDFs zusammenführen</h2>
+        </div>
+        <div class="field">
+          <div class="section-title">Dateiliste</div>
+          <div id="appendTotalPages" class="hint">Gesamtanzahl an Seiten: 0</div>
+          <div id="appendFileList" class="file-list"></div>
+        </div>
+        <div class="controls">
+          <button id="appendStartButton" class="start" type="button">Zusammenführen</button>
+        </div>
+      </section>
+    </div>
+    <input id="sharedPdfInput" class="hidden" type="file" accept="application/pdf,.pdf" multiple>
+  </main>
+  <dialog id="settingsDialog" class="settings-dialog hidden" aria-labelledby="settingsTitle">
+    <p id="settingsTitle" class="settings-title">Einstellungen</p>
+    <div class="theme-choice" role="radiogroup" aria-label="Anzeigemodus">
+      <label><input id="themeDark" type="radio" name="themeMode" value="dark"> Dunkel</label>
+      <label><input id="themeLight" type="radio" name="themeMode" value="light"> Hell</label>
+    </div>
+    <p class="settings-row">Version: <span id="settingsVariant" class="mono">-</span></p>
+    <div class="update-actions">
+      <button id="settingsCloseButton" class="btn-small primary" type="button">Schließen</button>
+    </div>
+  </dialog>
+  <dialog id="resultDialog" class="settings-dialog result-dialog hidden" aria-labelledby="resultTitle" aria-describedby="resultMessage">
+    <p id="resultTitle" class="settings-title">Hinweis</p>
+    <p id="resultMessage" class="result-message"></p>
+    <div class="update-actions">
+      <button id="resultCloseButton" class="btn-small primary" type="button">OK</button>
+    </div>
+  </dialog>
+  <dialog id="busyDialog" class="settings-dialog busy-dialog hidden" aria-labelledby="busyTitle" aria-describedby="busyMessage">
+    <p id="busyTitle" class="settings-title">Bitte warten</p>
+    <p id="busyMessage" class="busy-message">PDF-Engine wird geladen ...</p>
+  </dialog>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const A4_WIDTH = 595.3;
+      const A4_HEIGHT = 841.9;
+      const A4_TOLERANCE = 3.0;
+      const A3_WIDTH = A4_HEIGHT;
+      const A3_HEIGHT = A4_WIDTH * 2.0;
+
+      const ui = {
+        sharedPdfInput: document.getElementById("sharedPdfInput"),
+        dropZone: document.getElementById("dropZone"),
+        dropHint: document.getElementById("dropHint"),
+        fileName: document.getElementById("fileName"),
+        appendTotalPages: document.getElementById("appendTotalPages"),
+        appendFileList: document.getElementById("appendFileList"),
+        appendStartButton: document.getElementById("appendStartButton"),
+        optionsPanel: document.getElementById("optionsPanel"),
+        pagesButtons: [...document.querySelectorAll("#pagesButtons button[data-pages]")],
+        studentCount: document.getElementById("studentCount"),
+        paddingModes: [...document.querySelectorAll('input[name="paddingMode"]')],
+        specialThreeModeButton: document.getElementById("specialThreeModeButton"),
+        startButton: document.getElementById("startButton"),
+        settingsButton: document.getElementById("settingsButton"),
+        settingsDialog: document.getElementById("settingsDialog"),
+        settingsVariant: document.getElementById("settingsVariant"),
+        themeDark: document.getElementById("themeDark"),
+        themeLight: document.getElementById("themeLight"),
+        settingsCloseButton: document.getElementById("settingsCloseButton"),
+        resultDialog: document.getElementById("resultDialog"),
+        resultTitle: document.getElementById("resultTitle"),
+        resultMessage: document.getElementById("resultMessage"),
+        resultCloseButton: document.getElementById("resultCloseButton"),
+        busyDialog: document.getElementById("busyDialog"),
+        busyTitle: document.getElementById("busyTitle"),
+        busyMessage: document.getElementById("busyMessage"),
+      };
+
+      let selectedFile = null;
+      let appendFiles = [];
+      const appendPageCountByFile = new Map();
+      let appendPageCountProbeToken = 0;
+      let appendDragIndex = null;
+      let appendDropIndex = null;
+      let pagesPerSheet = 2;
+      let specialThreeModeEnabled = false;
+      let specialThreeModeAvailable = false;
+      let optionsEnabled = false;
+      let specialModeProbeToken = 0;
+      let swRegistration = null;
+      let pdfLibLoadPromise = null;
+      const THEME_STORAGE_KEY = "merger-theme";
+      const PDF_LIB_CDN_URL = "https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js";
+      const MACOS_PERMISSION_HINT_MESSAGE = [
+        "macOS blockiert manchmal den Zugriff auf Dateien.",
+        "",
+        "So behebst du das:",
+        "",
+        "1. Öffne die Systemeinstellungen",
+        "2. Gehe zu „Datenschutz & Sicherheit“",
+        "3. Öffne „Dateien & Ordner“",
+        "4. Wähle deinen Browser (z. B. Safari, Chrome oder Firefox)",
+        "5. Aktiviere Zugriff auf „Downloads“ (und ggf. „Dokumente“)",
+        "6. Starte den Browser neu"
+      ].join("\n");
+
+      function setVariant(value) {
+        ui.settingsVariant.textContent = value || "-";
+      }
+
+      function applyTheme(theme) {
+        const normalized = theme === "light" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", normalized);
+        ui.themeDark.checked = normalized === "dark";
+        ui.themeLight.checked = normalized === "light";
+        localStorage.setItem(THEME_STORAGE_KEY, normalized);
+      }
+
+      function initTheme() {
+        const stored = localStorage.getItem(THEME_STORAGE_KEY);
+        applyTheme(stored === "light" ? "light" : "dark");
+      }
+
+      function syncDialogUiState() {
+        const settingsOpen = ui.settingsDialog.open || ui.settingsDialog.hasAttribute("open") || !ui.settingsDialog.classList.contains("hidden");
+        const resultOpen = ui.resultDialog.open || ui.resultDialog.hasAttribute("open") || !ui.resultDialog.classList.contains("hidden");
+        const busyOpen = ui.busyDialog.open || ui.busyDialog.hasAttribute("open") || !ui.busyDialog.classList.contains("hidden");
+        document.body.classList.toggle("dialog-active", settingsOpen || resultOpen || busyOpen);
+      }
+
+      function isMacOS() {
+        const platform = typeof navigator.platform === "string" ? navigator.platform.toLowerCase() : "";
+        const userAgent = typeof navigator.userAgent === "string" ? navigator.userAgent.toLowerCase() : "";
+        return platform.includes("mac") || userAgent.includes("macintosh") || userAgent.includes("mac os x");
+      }
+
+      function isIOS() {
+        const platform = typeof navigator.platform === "string" ? navigator.platform : "";
+        const userAgent = typeof navigator.userAgent === "string" ? navigator.userAgent : "";
+        const touchPoints = typeof navigator.maxTouchPoints === "number" ? navigator.maxTouchPoints : 0;
+        return /iPad|iPhone|iPod/.test(platform)
+          || /iPad|iPhone|iPod/.test(userAgent)
+          || (platform === "MacIntel" && touchPoints > 1);
+      }
+
+      async function tryShareMergedPdfOnIOS(blob, outputName) {
+        if (!isIOS()) return { handled: false };
+        if (typeof navigator.share !== "function" || typeof File !== "function") {
+          return { handled: false };
+        }
+
+        const pdfFile = new File([blob], outputName, { type: "application/pdf" });
+        const shareData = { files: [pdfFile], title: outputName };
+
+        if (typeof navigator.canShare === "function") {
+          try {
+            if (!navigator.canShare(shareData)) return { handled: false };
+          } catch (error) {
+            console.warn("iOS canShare-Pruefung fehlgeschlagen:", error);
+            return { handled: false };
+          }
+        }
+
+        try {
+          await navigator.share(shareData);
+          return { handled: true, status: "shared" };
+        } catch (error) {
+          if (error && error.name === "AbortError") {
+            return { handled: true, status: "cancelled" };
+          }
+          console.warn("iOS-Teilen fehlgeschlagen, falle auf Download zurueck:", error);
+          return { handled: false };
+        }
+      }
+
+      function showMacOSPermissionHint() {
+        if (!isMacOS()) return false;
+        showResultDialog(MACOS_PERMISSION_HINT_MESSAGE, "warn", "Hinweis");
+        return true;
+      }
+
+      function isFileAccessRestrictionError(error) {
+        if (!error) return false;
+        const name = String(error.name || "").toLowerCase();
+        const message = String(error.message || "").toLowerCase();
+        if (
+          name === "notreadableerror" ||
+          name === "securityerror" ||
+          name === "notallowederror" ||
+          name === "permissiondeniederror"
+        ) {
+          return true;
+        }
+        return /permission|zugriff|denied|not readable|operation not permitted|security/.test(message);
+      }
+
+      function maybeShowMacOSPermissionHint(error) {
+        if (!isFileAccessRestrictionError(error)) return false;
+        return showMacOSPermissionHint();
+      }
+
+      function showSettingsDialog() {
+        ui.settingsDialog.classList.remove("hidden");
+        if (typeof ui.settingsDialog.showModal === "function") {
+          if (!ui.settingsDialog.open) ui.settingsDialog.showModal();
+        } else {
+          ui.settingsDialog.setAttribute("open", "");
+        }
+        syncDialogUiState();
+      }
+
+      function hideSettingsDialog() {
+        if (typeof ui.settingsDialog.close === "function" && ui.settingsDialog.open) {
+          ui.settingsDialog.close();
+        } else {
+          ui.settingsDialog.removeAttribute("open");
+        }
+        ui.settingsDialog.classList.add("hidden");
+        syncDialogUiState();
+      }
+
+      function showResultDialog(message, tone = "warn", title = "Hinweis") {
+        const hasTitle = Boolean(title && String(title).trim());
+        ui.resultTitle.textContent = hasTitle ? title : "";
+        ui.resultTitle.classList.toggle("hidden", !hasTitle);
+        ui.resultMessage.textContent = message;
+        ui.resultDialog.setAttribute("data-tone", tone);
+        ui.resultDialog.classList.remove("hidden");
+        if (typeof ui.resultDialog.showModal === "function") {
+          if (!ui.resultDialog.open) ui.resultDialog.showModal();
+        } else {
+          ui.resultDialog.setAttribute("open", "");
+        }
+        syncDialogUiState();
+      }
+
+      function hideResultDialog() {
+        if (typeof ui.resultDialog.close === "function" && ui.resultDialog.open) {
+          ui.resultDialog.close();
+        } else {
+          ui.resultDialog.removeAttribute("open");
+        }
+        ui.resultDialog.classList.add("hidden");
+        syncDialogUiState();
+      }
+
+      function showBusyDialog(message, title = "Bitte warten") {
+        ui.busyTitle.textContent = title;
+        ui.busyMessage.textContent = message;
+        ui.busyDialog.classList.remove("hidden");
+        if (typeof ui.busyDialog.showModal === "function") {
+          if (!ui.busyDialog.open) ui.busyDialog.showModal();
+        } else {
+          ui.busyDialog.setAttribute("open", "");
+        }
+        syncDialogUiState();
+      }
+
+      function hideBusyDialog() {
+        if (typeof ui.busyDialog.close === "function" && ui.busyDialog.open) {
+          ui.busyDialog.close();
+        } else {
+          ui.busyDialog.removeAttribute("open");
+        }
+        ui.busyDialog.classList.add("hidden");
+        syncDialogUiState();
+      }
+
+      async function ensurePdfLibLoaded() {
+        const PDFLib = window.PDFLib;
+        if (PDFLib && PDFLib.PDFDocument) return;
+        if (!pdfLibLoadPromise) {
+          pdfLibLoadPromise = new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = PDF_LIB_CDN_URL;
+            script.onload = () => {
+              const loaded = window.PDFLib && window.PDFLib.PDFDocument;
+              if (loaded) resolve();
+              else reject(new Error("PDF-Library wurde geladen, ist aber unvollstaendig."));
+            };
+            script.onerror = () => reject(new Error("PDF-Library konnte nicht geladen werden."));
+            document.head.appendChild(script);
+          });
+        }
+        return pdfLibLoadPromise;
+      }
+
+      function requestVariant(worker) {
+        if (!worker) return;
+        worker.postMessage({ type: "GET_APP_VARIANT" });
+      }
+
+      function setupServiceWorker() {
+        navigator.serviceWorker.addEventListener("message", (event) => {
+          const data = event.data;
+          if (!data || data.type !== "APP_VARIANT") return;
+          setVariant(data.value);
+        });
+
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
+            .then((registration) => {
+              swRegistration = registration;
+
+              const variantWorker = registration.active || registration.waiting || registration.installing;
+              requestVariant(variantWorker);
+            })
+            .catch((err) => {
+              console.warn("Service Worker konnte nicht registriert werden:", err);
+            });
+        });
+      }
+
+      function fmtNumber(n) {
+        if (Math.abs(n) < 1e-10) n = 0;
+        const fixed = Number(n).toFixed(4);
+        return fixed.replace(/\.?0+$/, "");
+      }
+
+      function gcd(a, b) {
+        a = Math.abs(a);
+        b = Math.abs(b);
+        while (b) {
+          const t = b;
+          b = a % b;
+          a = t;
+        }
+        return a;
+      }
+
+      function lcm(a, b) {
+        if (!a || !b) return 0;
+        return Math.abs(a * b) / gcd(a, b);
+      }
+
+      function buildPaddedIndices(pageCount, groupSize) {
+        const indices = [];
+        for (let i = 0; i < pageCount; i += 1) indices.push(i);
+        const remainder = pageCount % groupSize;
+        if (remainder) {
+          const needed = groupSize - remainder;
+          for (let i = 0; i < needed; i += 1) {
+            indices.push(indices[i % pageCount]);
+          }
+        }
+        return indices;
+      }
+
+      function buildBlankIndices(pageCount, groupSize) {
+        const indices = [];
+        for (let i = 0; i < pageCount; i += 1) indices.push(i);
+        const remainder = pageCount % groupSize;
+        if (remainder) {
+          const needed = groupSize - remainder;
+          for (let i = 0; i < needed; i += 1) indices.push(null);
+        }
+        return indices;
+      }
+
+      function buildLcmIndices(pageCount, groupSize) {
+        if (pageCount <= 0 || groupSize <= 0) return [];
+        const total = lcm(pageCount, groupSize);
+        if (pageCount <= groupSize) {
+          const sheetCount = total / groupSize;
+          const extraSlots = groupSize - pageCount;
+          const indices = [];
+          let extraIndex = 0;
+          for (let sheet = 0; sheet < sheetCount; sheet += 1) {
+            for (let i = 0; i < pageCount; i += 1) indices.push(i);
+            for (let i = 0; i < extraSlots; i += 1) {
+              indices.push(extraIndex);
+              extraIndex = (extraIndex + 1) % pageCount;
+            }
+          }
+          return indices;
+        }
+        return Array.from({ length: total }, (_, i) => i % pageCount);
+      }
+
+      function buildTwoUpPairs(pageCount, enableThreePageSpecialMode) {
+        if (pageCount <= 0) return [];
+        if (enableThreePageSpecialMode && pageCount === 3) {
+          return [[0, 0], [1, 2], [1, 2]];
+        }
+
+        const pairs = [];
+        if (pageCount % 2 === 0) {
+          for (let i = 0; i < pageCount; i += 2) pairs.push([i, i + 1]);
+        } else {
+          for (let i = 0; i < pageCount; i += 1) pairs.push([i, i]);
+        }
+        return pairs;
+      }
+
+      function buildSpecialThreeModePairs(paddingMode, studentCount) {
+        // Standard-Spezialmodus: 1|1 + 2|3 + 2|3
+        if (paddingMode !== "lcm") {
+          return [[0, 0], [1, 2], [1, 2]];
+        }
+
+        // LCM-Spezialmodus:
+        // ceil(n/2) mal 1|1 und n mal 2|3
+        const n = Number.isInteger(studentCount) && studentCount > 0 ? studentCount : 0;
+        const pairs = [];
+        const oneOneCount = Math.ceil(n / 2);
+        for (let i = 0; i < oneOneCount; i += 1) pairs.push([0, 0]);
+        for (let i = 0; i < n; i += 1) pairs.push([1, 2]);
+        return pairs;
+      }
+
+      function bytesToBinaryString(bytes) {
+        const chunk = 0x8000;
+        let out = "";
+        for (let i = 0; i < bytes.length; i += chunk) {
+          out += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
+        return out;
+      }
+
+      function binaryStringToBytes(str) {
+        const out = new Uint8Array(str.length);
+        for (let i = 0; i < str.length; i += 1) out[i] = str.charCodeAt(i) & 0xFF;
+        return out;
+      }
+
+      function asciiBytes(str) {
+        const out = new Uint8Array(str.length);
+        for (let i = 0; i < str.length; i += 1) out[i] = str.charCodeAt(i) & 0xFF;
+        return out;
+      }
+
+      function joinUint8(parts) {
+        const total = parts.reduce((sum, part) => sum + part.length, 0);
+        const out = new Uint8Array(total);
+        let offset = 0;
+        for (const part of parts) {
+          out.set(part, offset);
+          offset += part.length;
+        }
+        return out;
+      }
+
+      function skipWhitespaceAndComments(text, start) {
+        let i = start;
+        while (i < text.length) {
+          const ch = text[i];
+          if (/\s/.test(ch)) {
+            i += 1;
+            continue;
+          }
+          if (ch === "%") {
+            while (i < text.length && text[i] !== "\n" && text[i] !== "\r") i += 1;
+            continue;
+          }
+          break;
+        }
+        return i;
+      }
+
+      function isDelimiter(ch) {
+        return !ch || /[\s<>\[\]\(\)\/%]/.test(ch);
+      }
+
+      function isNumberToken(token) {
+        return /^[+-]?(?:\d+|\d*\.\d+)$/.test(token);
+      }
+
+      function scanLiteralString(text, start) {
+        let depth = 0;
+        let escaped = false;
+        let i = start;
+        while (i < text.length) {
+          const ch = text[i];
+          if (escaped) {
+            escaped = false;
+          } else if (ch === "\\") {
+            escaped = true;
+          } else if (ch === "(") {
+            depth += 1;
+          } else if (ch === ")") {
+            depth -= 1;
+            if (depth === 0) return i + 1;
+          }
+          i += 1;
+        }
+        return text.length;
+      }
+
+      function scanComposite(text, start, openA, closeA, openB = null, closeB = null) {
+        let depthA = 0;
+        let depthB = 0;
+        let i = start;
+        while (i < text.length) {
+          const duo = text.slice(i, i + 2);
+          const ch = text[i];
+          if (ch === "(") {
+            i = scanLiteralString(text, i);
+            continue;
+          }
+          if (duo === openA) {
+            depthA += 1;
+            i += openA.length;
+            continue;
+          }
+          if (duo === closeA) {
+            depthA -= 1;
+            i += closeA.length;
+            if (depthA === 0 && depthB === 0) return i;
+            continue;
+          }
+          if (openB && duo === openB) {
+            depthB += 1;
+            i += openB.length;
+            continue;
+          }
+          if (closeB && duo === closeB) {
+            depthB -= 1;
+            i += closeB.length;
+            continue;
+          }
+          if (ch === "[" && openA !== "[") {
+            i = scanArray(text, i);
+            continue;
+          }
+          i += 1;
+        }
+        return text.length;
+      }
+
+      function scanArray(text, start) {
+        let depth = 0;
+        let i = start;
+        while (i < text.length) {
+          const duo = text.slice(i, i + 2);
+          const ch = text[i];
+          if (ch === "(") {
+            i = scanLiteralString(text, i);
+            continue;
+          }
+          if (duo === "<<") {
+            i = scanDictionary(text, i);
+            continue;
+          }
+          if (ch === "[") {
+            depth += 1;
+          } else if (ch === "]") {
+            depth -= 1;
+            if (depth === 0) return i + 1;
+          }
+          i += 1;
+        }
+        return text.length;
+      }
+
+      function scanDictionary(text, start) {
+        let depth = 0;
+        let i = start;
+        while (i < text.length) {
+          const duo = text.slice(i, i + 2);
+          const ch = text[i];
+          if (ch === "(") {
+            i = scanLiteralString(text, i);
+            continue;
+          }
+          if (duo === "<<") {
+            depth += 1;
+            i += 2;
+            continue;
+          }
+          if (duo === ">>") {
+            depth -= 1;
+            i += 2;
+            if (depth === 0) return i;
+            continue;
+          }
+          if (ch === "[") {
+            i = scanArray(text, i);
+            continue;
+          }
+          i += 1;
+        }
+        return text.length;
+      }
+
+      function readPdfValue(text, start) {
+        let i = skipWhitespaceAndComments(text, start);
+        if (i >= text.length) return null;
+        const ch = text[i];
+        const duo = text.slice(i, i + 2);
+
+        if (duo === "<<") {
+          const end = scanDictionary(text, i);
+          return { text: text.slice(i, end), end };
+        }
+        if (ch === "[") {
+          const end = scanArray(text, i);
+          return { text: text.slice(i, end), end };
+        }
+        if (ch === "(") {
+          const end = scanLiteralString(text, i);
+          return { text: text.slice(i, end), end };
+        }
+        if (ch === "<") {
+          let end = i + 1;
+          while (end < text.length && text[end] !== ">") end += 1;
+          end = Math.min(end + 1, text.length);
+          return { text: text.slice(i, end), end };
+        }
+        if (ch === "/") {
+          let end = i + 1;
+          while (end < text.length && !isDelimiter(text[end])) end += 1;
+          return { text: text.slice(i, end), end };
+        }
+
+        let end1 = i;
+        while (end1 < text.length && !isDelimiter(text[end1])) end1 += 1;
+        const token1 = text.slice(i, end1);
+
+        let j = skipWhitespaceAndComments(text, end1);
+        let end2 = j;
+        while (end2 < text.length && !isDelimiter(text[end2])) end2 += 1;
+        const token2 = text.slice(j, end2);
+
+        let k = skipWhitespaceAndComments(text, end2);
+        if (isNumberToken(token1) && isNumberToken(token2) && text[k] === "R" && isDelimiter(text[k + 1])) {
+          return { text: text.slice(i, k + 1), end: k + 1 };
+        }
+
+        return { text: token1, end: end1 };
+      }
+
+      function parseTopLevelDict(dictText) {
+        const start = dictText.indexOf("<<");
+        if (start === -1) return null;
+        const end = scanDictionary(dictText, start);
+        if (!end) return null;
+        const inner = dictText.slice(start + 2, end - 2);
+        const out = new Map();
+        let i = 0;
+
+        while (i < inner.length) {
+          i = skipWhitespaceAndComments(inner, i);
+          if (i >= inner.length) break;
+          if (inner[i] !== "/") {
+            i += 1;
+            continue;
+          }
+          let nameEnd = i + 1;
+          while (nameEnd < inner.length && !isDelimiter(inner[nameEnd])) nameEnd += 1;
+          const key = inner.slice(i + 1, nameEnd);
+          const value = readPdfValue(inner, nameEnd);
+          if (!value) break;
+          out.set(key, value.text.trim());
+          i = value.end;
+        }
+
+        return out;
+      }
+
+      function extractRef(valueText) {
+        if (!valueText) return null;
+        const match = valueText.trim().match(/^(\d+)\s+(\d+)\s+R$/);
+        if (!match) return null;
+        return { num: Number(match[1]), gen: Number(match[2]) };
+      }
+
+      function extractRefs(valueText) {
+        const refs = [];
+        if (!valueText) return refs;
+        const re = /(\d+)\s+(\d+)\s+R/g;
+        let match;
+        while ((match = re.exec(valueText)) !== null) {
+          refs.push({ num: Number(match[1]), gen: Number(match[2]) });
+        }
+        return refs;
+      }
+
+      function parseNumberArray(valueText) {
+        if (!valueText) return null;
+        const nums = valueText.match(/[+-]?(?:\d+|\d*\.\d+)/g);
+        if (!nums) return null;
+        return nums.map(Number);
+      }
+
+      function matrixMultiply(m1, m2) {
+        const [a1, b1, c1, d1, e1, f1] = m1;
+        const [a2, b2, c2, d2, e2, f2] = m2;
+        return [
+          a1 * a2 + c1 * b2,
+          b1 * a2 + d1 * b2,
+          a1 * c2 + c1 * d2,
+          b1 * c2 + d1 * d2,
+          a1 * e2 + c1 * f2 + e1,
+          b1 * e2 + d1 * f2 + f1
+        ];
+      }
+
+      function matrixToPdf(m) {
+        return m.map(fmtNumber).join(" ");
+      }
+
+      class SimplePdfDocument {
+        constructor(bytes) {
+          this.bytes = bytes;
+          this.binary = bytesToBinaryString(bytes);
+          this.objects = new Map();
+          this.pages = [];
+          this._parseObjects();
+          this._collectPages();
+        }
+
+        _parseObjects() {
+          if (this.binary.includes("/Encrypt")) {
+            throw new Error("Verschlüsselte oder passwortgeschützte PDFs werden nicht unterstützt.");
+          }
+
+          const re = /^(\d+)\s+(\d+)\s+obj\b/gm;
+          const starts = [];
+          let match;
+          while ((match = re.exec(this.binary)) !== null) {
+            starts.push({
+              index: match.index,
+              bodyStart: re.lastIndex,
+              num: Number(match[1]),
+              gen: Number(match[2])
+            });
+          }
+
+          for (let i = 0; i < starts.length; i += 1) {
+            const cur = starts[i];
+            const end = (i + 1 < starts.length) ? starts[i + 1].index : this.binary.length;
+            let body = this.binary.slice(cur.bodyStart, end);
+            const endObjPos = body.lastIndexOf("endobj");
+            if (endObjPos !== -1) body = body.slice(0, endObjPos);
+            body = body.trim();
+
+            const streamPos = body.indexOf("stream");
+            let obj;
+            if (streamPos !== -1) {
+              const dictEnd = body.lastIndexOf(">>", streamPos);
+              const between = dictEnd !== -1 ? body.slice(dictEnd + 2, streamPos) : "";
+              if (dictEnd !== -1 && /^[\s]*$/.test(between)) {
+                let dataStart = streamPos + "stream".length;
+                if (body[dataStart] === "\r" && body[dataStart + 1] === "\n") dataStart += 2;
+                else if (body[dataStart] === "\r" || body[dataStart] === "\n") dataStart += 1;
+
+                const endStreamPos = body.lastIndexOf("endstream");
+                const dataEnd = endStreamPos !== -1 ? endStreamPos : body.length;
+                const dictText = body.slice(0, dictEnd + 2).trim();
+                const streamChunk = body.slice(dataStart, dataEnd);
+
+                obj = {
+                  num: cur.num,
+                  gen: cur.gen,
+                  isStream: true,
+                  dictText,
+                  streamBytes: binaryStringToBytes(streamChunk),
+                  parsedDict: null
+                };
+              } else {
+                obj = {
+                  num: cur.num,
+                  gen: cur.gen,
+                  isStream: false,
+                  bodyText: body,
+                  parsedDict: null
+                };
+              }
+            } else {
+              obj = {
+                num: cur.num,
+                gen: cur.gen,
+                isStream: false,
+                bodyText: body,
+                parsedDict: null
+              };
+            }
+
+            this.objects.set(cur.num, obj);
+          }
+        }
+
+        _dictOf(obj) {
+          if (!obj) return null;
+          if (obj.parsedDict) return obj.parsedDict;
+          const text = obj.isStream ? obj.dictText : obj.bodyText;
+          obj.parsedDict = parseTopLevelDict(text);
+          return obj.parsedDict;
+        }
+
+        _objectText(obj) {
+          return obj ? (obj.isStream ? obj.dictText : obj.bodyText) : "";
+        }
+
+        getObject(num) {
+          return this.objects.get(num) || null;
+        }
+
+        getDict(num) {
+          const obj = this.getObject(num);
+          return this._dictOf(obj);
+        }
+
+        _valueFromDict(num, key) {
+          const dict = this.getDict(num);
+          return dict ? dict.get(key) || null : null;
+        }
+
+        _collectPages() {
+          const catalogNum = this._findCatalog();
+          if (catalogNum) {
+            const pagesRef = extractRef(this._valueFromDict(catalogNum, "Pages"));
+            if (pagesRef) {
+              const ordered = [];
+              const seen = new Set();
+              const walk = (num) => {
+                if (seen.has(num)) return;
+                seen.add(num);
+                const dict = this.getDict(num);
+                if (!dict) return;
+                const type = dict.get("Type") || "";
+                if (/^\/Page\b/.test(type) && !/^\/Pages\b/.test(type)) {
+                  ordered.push(num);
+                  return;
+                }
+                const kids = extractRefs(dict.get("Kids") || "");
+                for (const kid of kids) walk(kid.num);
+              };
+              walk(pagesRef.num);
+              if (ordered.length) {
+                this.pages = ordered;
+                return;
+              }
+            }
+          }
+
+          const fallback = [];
+          for (const [num, obj] of this.objects) {
+            const text = this._objectText(obj);
+            if (/\/Type\s*\/Page\b/.test(text) && !/\/Type\s*\/Pages\b/.test(text)) {
+              fallback.push(num);
+            }
+          }
+          fallback.sort((a, b) => a - b);
+          this.pages = fallback;
+        }
+
+        _findCatalog() {
+          for (const [num, obj] of this.objects) {
+            const text = this._objectText(obj);
+            if (/\/Type\s*\/Catalog\b/.test(text)) return num;
+          }
+          return null;
+        }
+
+        _resolveInheritedValue(pageNum, key) {
+          const seen = new Set();
+          let cur = pageNum;
+          while (cur && !seen.has(cur)) {
+            seen.add(cur);
+            const value = this._valueFromDict(cur, key);
+            if (value) return value;
+            const parentRef = extractRef(this._valueFromDict(cur, "Parent"));
+            cur = parentRef ? parentRef.num : 0;
+          }
+          return null;
+        }
+
+        _resolveArrayOrIndirect(valueText) {
+          if (!valueText) return null;
+          const ref = extractRef(valueText);
+          if (ref) {
+            const obj = this.getObject(ref.num);
+            if (!obj || obj.isStream) return null;
+            return parseNumberArray(obj.bodyText);
+          }
+          return parseNumberArray(valueText);
+        }
+
+        getPageCount() {
+          return this.pages.length;
+        }
+
+        getPageInfo(index) {
+          const pageNum = this.pages[index];
+          if (!pageNum) throw new Error("Seite nicht gefunden.");
+
+          const mediaBoxValue = this._resolveInheritedValue(pageNum, "MediaBox");
+          const mediaBox = this._resolveArrayOrIndirect(mediaBoxValue);
+          if (!mediaBox || mediaBox.length < 4) {
+            throw new Error("MediaBox konnte nicht gelesen werden.");
+          }
+
+          const cropBoxValue = this._resolveInheritedValue(pageNum, "CropBox");
+          const cropBox = this._resolveArrayOrIndirect(cropBoxValue);
+          const viewBox = cropBox && cropBox.length >= 4 ? cropBox : mediaBox;
+
+          const [llx, lly, urx, ury] = viewBox;
+          const width = Math.abs(urx - llx);
+          const height = Math.abs(ury - lly);
+
+          const resourcesValue = this._resolveInheritedValue(pageNum, "Resources");
+          const rotateValue = this._resolveInheritedValue(pageNum, "Rotate");
+          const rotateNum = rotateValue ? ((parseInt(rotateValue, 10) % 360) + 360) % 360 : 0;
+          const contentsValue = this._valueFromDict(pageNum, "Contents");
+
+          let contentRefs = [];
+          const directContentRef = extractRef(contentsValue || "");
+          if (directContentRef) {
+            const contentsObj = this.getObject(directContentRef.num);
+            if (contentsObj && !contentsObj.isStream && /^\s*\[/.test(contentsObj.bodyText || "")) {
+              contentRefs = extractRefs(contentsObj.bodyText);
+            } else {
+              contentRefs = [directContentRef];
+            }
+          } else if (contentsValue && contentsValue.trim().startsWith("[")) {
+            contentRefs = extractRefs(contentsValue);
+          }
+
+          return {
+            pageNum,
+            mediaBox: mediaBox.slice(0, 4),
+            viewBox: [llx, lly, urx, ury],
+            width,
+            height,
+            rotate: rotateNum,
+            resourcesValue,
+            contentRefs
+          };
+        }
+
+        isA4Document() {
+          for (let i = 0; i < this.getPageCount(); i += 1) {
+            const { width, height } = this.getPageInfo(i);
+            const portrait = Math.abs(width - A4_WIDTH) <= A4_TOLERANCE && Math.abs(height - A4_HEIGHT) <= A4_TOLERANCE;
+            const landscape = Math.abs(width - A4_HEIGHT) <= A4_TOLERANCE && Math.abs(height - A4_WIDTH) <= A4_TOLERANCE;
+            if (!portrait && !landscape) return false;
+          }
+          return true;
+        }
+      }
+
+      class PdfWriterLite {
+        constructor() {
+          this.objects = [null];
+        }
+
+        reserveObject() {
+          this.objects.push({ kind: "placeholder" });
+          return this.objects.length - 1;
+        }
+
+        addObject(text) {
+          const num = this.reserveObject();
+          this.setObject(num, { kind: "plain", text });
+          return num;
+        }
+
+        addStreamObject(dictText, streamBytes) {
+          const num = this.reserveObject();
+          this.setObject(num, { kind: "stream", dictText, streamBytes });
+          return num;
+        }
+
+        setObject(num, obj) {
+          this.objects[num] = obj;
+        }
+
+        _withLength(dictText, byteLength) {
+          const cleaned = dictText.trim();
+          if (!cleaned.startsWith("<<") || !cleaned.endsWith(">>")) {
+            throw new Error("Ungültiges Stream-Dictionary.");
+          }
+          return cleaned.slice(0, -2).trimEnd() + " /Length " + byteLength + " >>";
+        }
+
+        toBytes(rootNum) {
+          const parts = [];
+          const offsets = [0];
+
+          const header = asciiBytes("%PDF-1.7\n%\xFF\xFF\xFF\xFF\n");
+          parts.push(header);
+          let offset = header.length;
+
+          for (let i = 1; i < this.objects.length; i += 1) {
+            offsets[i] = offset;
+            const obj = this.objects[i];
+            const prefix = asciiBytes(i + " 0 obj\n");
+            parts.push(prefix);
+            offset += prefix.length;
+
+            if (!obj || obj.kind === "placeholder") {
+              const body = asciiBytes("null\n");
+              parts.push(body);
+              offset += body.length;
+            } else if (obj.kind === "plain") {
+              const body = asciiBytes(String(obj.text).trim() + "\n");
+              parts.push(body);
+              offset += body.length;
+            } else if (obj.kind === "stream") {
+              const dict = asciiBytes(this._withLength(obj.dictText, obj.streamBytes.length) + "\nstream\n");
+              const suffix = asciiBytes("\nendstream\n");
+              parts.push(dict, obj.streamBytes, suffix);
+              offset += dict.length + obj.streamBytes.length + suffix.length;
+            } else {
+              throw new Error("Unbekannter Objekttyp.");
+            }
+
+            const endObj = asciiBytes("endobj\n");
+            parts.push(endObj);
+            offset += endObj.length;
+          }
+
+          const xrefOffset = offset;
+          const xrefLines = ["xref", "0 " + this.objects.length, "0000000000 65535 f "];
+          for (let i = 1; i < this.objects.length; i += 1) {
+            xrefLines.push(String(offsets[i]).padStart(10, "0") + " 00000 n ");
+          }
+          const xref = asciiBytes(xrefLines.join("\n") + "\n");
+          parts.push(xref);
+          offset += xref.length;
+
+          const trailer =
+            "trailer\n<< /Size " + this.objects.length + " /Root " + rootNum + " 0 R >>\n" +
+            "startxref\n" + xrefOffset + "\n%%EOF";
+          const trailerBytes = asciiBytes(trailer);
+          parts.push(trailerBytes);
+
+          return joinUint8(parts);
+        }
+      }
+
+      class OfflineImposer {
+        constructor(sourceDoc) {
+          this.source = sourceDoc;
+          this.writer = new PdfWriterLite();
+          this.imported = new Map();
+          this.formCache = new Map();
+          this.directResourceCache = new Map();
+        }
+
+        _replaceRefsInText(text) {
+          if (!text) return text;
+          return text.replace(/(\d+)\s+(\d+)\s+R/g, (_, a) => {
+            const mapped = this._ensureImportedObject(Number(a));
+            return mapped + " 0 R";
+          });
+        }
+
+        _ensureImportedObject(sourceNum) {
+          if (this.imported.has(sourceNum)) return this.imported.get(sourceNum);
+          const sourceObj = this.source.getObject(sourceNum);
+          if (!sourceObj) {
+            throw new Error("Die PDF verweist auf komprimierte oder fehlende Objekte. Solche Objekt-Streams werden in dieser Offline-Version nicht unterstützt.");
+          }
+
+          const newNum = this.writer.reserveObject();
+          this.imported.set(sourceNum, newNum);
+
+          if (sourceObj.isStream) {
+            const remappedDict = this._replaceRefsInText(sourceObj.dictText);
+            this.writer.setObject(newNum, {
+              kind: "stream",
+              dictText: remappedDict,
+              streamBytes: sourceObj.streamBytes
+            });
+          } else {
+            const remappedText = this._replaceRefsInText(sourceObj.bodyText);
+            this.writer.setObject(newNum, {
+              kind: "plain",
+              text: remappedText
+            });
+          }
+
+          return newNum;
+        }
+
+        _resourceRefForPage(pageInfo) {
+          const raw = pageInfo.resourcesValue;
+          if (!raw) return this.writer.addObject("<< >>");
+
+          const ref = extractRef(raw);
+          if (ref) return this._ensureImportedObject(ref.num);
+
+          if (this.directResourceCache.has(raw)) {
+            return this.directResourceCache.get(raw);
+          }
+
+          const newNum = this.writer.addObject(this._replaceRefsInText(raw));
+          this.directResourceCache.set(raw, newNum);
+          return newNum;
+        }
+
+        _pickStreamSettings(streamObj) {
+          const dict = parseTopLevelDict(streamObj.dictText);
+          if (!dict) return "";
+          const parts = [];
+          const filter = dict.get("Filter");
+          const decodeParms = dict.get("DecodeParms");
+          if (filter) parts.push("/Filter " + this._replaceRefsInText(filter));
+          if (decodeParms) parts.push("/DecodeParms " + this._replaceRefsInText(decodeParms));
+          return parts.length ? " " + parts.join(" ") : "";
+        }
+
+        _formObjectsForPage(pageInfo) {
+          const key = [
+            pageInfo.pageNum,
+            pageInfo.viewBox.join(","),
+            pageInfo.rotate
+          ].join("|");
+
+          if (this.formCache.has(key)) return this.formCache.get(key);
+
+          const resRef = this._resourceRefForPage(pageInfo);
+          const [llx, lly, urx, ury] = pageInfo.viewBox;
+          const bbox = `[${fmtNumber(llx)} ${fmtNumber(lly)} ${fmtNumber(urx)} ${fmtNumber(ury)}]`;
+          const formRefs = [];
+
+          if (!pageInfo.contentRefs.length) {
+            throw new Error("Die Seiteninhalte konnten nicht gelesen werden (fehlender /Contents-Eintrag).");
+          }
+
+          for (const ref of pageInfo.contentRefs) {
+            const streamObj = this.source.getObject(ref.num);
+            if (!streamObj || !streamObj.isStream) {
+              throw new Error("Die Seiteninhalte konnten nicht gelesen werden.");
+            }
+            const extra = this._pickStreamSettings(streamObj);
+            const dictText = `<< /Type /XObject /Subtype /Form /FormType 1 /BBox ${bbox} /Resources ${resRef} 0 R${extra} >>`;
+            const formNum = this.writer.addStreamObject(dictText, streamObj.streamBytes);
+            formRefs.push(formNum);
+          }
+
+          this.formCache.set(key, formRefs);
+          return formRefs;
+        }
+
+        _rotationMatrix(rotation, width, height) {
+          const rot = ((rotation % 360) + 360) % 360;
+          if (rot === 90) return [0, -1, 1, 0, 0, width];
+          if (rot === 180) return [-1, 0, 0, -1, width, height];
+          if (rot === 270) return [0, 1, -1, 0, height, 0];
+          return [1, 0, 0, 1, 0, 0];
+        }
+
+        _effectivePageSize(pageInfo) {
+          const rotated = pageInfo.rotate === 90 || pageInfo.rotate === 270;
+          return rotated
+            ? { width: pageInfo.height, height: pageInfo.width }
+            : { width: pageInfo.width, height: pageInfo.height };
+        }
+
+        _placementMatrix(pageInfo, xOffset, yOffset, cellWidth, cellHeight) {
+          const [llx, lly] = pageInfo.viewBox;
+          const t0 = [1, 0, 0, 1, -llx, -lly];
+          const rot = this._rotationMatrix(pageInfo.rotate, pageInfo.width, pageInfo.height);
+          const effective = this._effectivePageSize(pageInfo);
+
+          const scale = Math.min(cellWidth / effective.width, cellHeight / effective.height);
+          const drawnWidth = effective.width * scale;
+          const drawnHeight = effective.height * scale;
+          const tx = xOffset + (cellWidth - drawnWidth) / 2;
+          const ty = yOffset + (cellHeight - drawnHeight) / 2;
+          const st = [scale, 0, 0, scale, tx, ty];
+
+          return matrixMultiply(st, matrixMultiply(rot, t0));
+        }
+
+        _buildContentCommands(placements) {
+          const lines = [];
+          for (const item of placements) {
+            if (!item) continue;
+            const matrix = this._placementMatrix(item.pageInfo, item.x, item.y, item.w, item.h);
+            lines.push("q");
+            lines.push(matrixToPdf(matrix) + " cm");
+            for (const name of item.names) {
+              lines.push("/" + name + " Do");
+            }
+            lines.push("Q");
+          }
+          return lines.join("\n") + "\n";
+        }
+
+        _buildOutputPdf(layout) {
+          const pagesRootNum = this.writer.reserveObject();
+          const pageObjectNums = [];
+
+          for (const outputPage of layout.pages) {
+            const xObjectEntries = [];
+            let xObjectIndex = 1;
+            const placements = outputPage.placements.map((slot) => {
+              if (!slot) return null;
+              const formNums = this._formObjectsForPage(slot.pageInfo);
+              const names = formNums.map((formNum) => {
+                const name = "F" + xObjectIndex;
+                xObjectIndex += 1;
+                xObjectEntries.push("/" + name + " " + formNum + " 0 R");
+                return name;
+              });
+              return {
+                pageInfo: slot.pageInfo,
+                x: slot.x,
+                y: slot.y,
+                w: slot.w,
+                h: slot.h,
+                names
+              };
+            });
+
+            const resourcesRef = this.writer.addObject(
+              xObjectEntries.length
+                ? `<< /XObject << ${xObjectEntries.join(" ")} >> >>`
+                : "<< >>"
+            );
+
+            const contentBytes = asciiBytes(this._buildContentCommands(placements));
+            const contentRef = this.writer.addStreamObject("<< >>", contentBytes);
+
+            const pageRef = this.writer.addObject(
+              `<< /Type /Page /Parent ${pagesRootNum} 0 R /MediaBox [0 0 ${fmtNumber(outputPage.width)} ${fmtNumber(outputPage.height)}] /Resources ${resourcesRef} 0 R /Contents ${contentRef} 0 R >>`
+            );
+            pageObjectNums.push(pageRef);
+          }
+
+          this.writer.setObject(
+            pagesRootNum,
+            {
+              kind: "plain",
+              text: `<< /Type /Pages /Count ${pageObjectNums.length} /Kids [${pageObjectNums.map((n) => `${n} 0 R`).join(" ")}] >>`
+            }
+          );
+
+          const catalogNum = this.writer.addObject(`<< /Type /Catalog /Pages ${pagesRootNum} 0 R >>`);
+          return this.writer.toBytes(catalogNum);
+        }
+
+        impose(pagesPerSheet, paddingMode, enableThreePageSpecialMode, studentCount) {
+          const pageCount = this.source.getPageCount();
+          if (!pageCount) throw new Error("Die PDF enthält keine Seiten.");
+          if (enableThreePageSpecialMode && pageCount !== 3) {
+            throw new Error("Spezialmodus ist nur mit 3-seitiger PDF möglich.");
+          }
+
+          const isA4 = this.source.isA4Document();
+          const pageInfos = Array.from({ length: pageCount }, (_, i) => this.source.getPageInfo(i));
+          const layout = { pages: [] };
+
+          if (enableThreePageSpecialMode || pagesPerSheet === 2) {
+            const pairs = enableThreePageSpecialMode
+              ? buildSpecialThreeModePairs(paddingMode, studentCount)
+              : buildTwoUpPairs(pageCount, false);
+
+            for (const [leftIndex, rightIndex] of pairs) {
+              const leftPage = pageInfos[leftIndex];
+              const rightPage = pageInfos[rightIndex];
+
+              let outWidth, outHeight, halfWidth;
+              if (isA4) {
+                halfWidth = A4_WIDTH;
+                outHeight = A4_HEIGHT;
+                outWidth = A4_WIDTH * 2;
+              } else {
+                halfWidth = Math.max(leftPage.width, rightPage.width);
+                outHeight = Math.max(leftPage.height, rightPage.height);
+                outWidth = halfWidth * 2;
+                if (outWidth < outHeight) {
+                  outWidth = outHeight;
+                  halfWidth = outWidth / 2;
+                }
+              }
+
+              layout.pages.push({
+                width: outWidth,
+                height: outHeight,
+                placements: [
+                  { pageInfo: leftPage, x: 0, y: 0, w: halfWidth, h: outHeight },
+                  { pageInfo: rightPage, x: halfWidth, y: 0, w: halfWidth, h: outHeight }
+                ]
+              });
+            }
+          } else if ([4, 6, 8].includes(pagesPerSheet)) {
+            let indices;
+            if (paddingMode === "blank") indices = buildBlankIndices(pageCount, pagesPerSheet);
+            else if (paddingMode === "lcm") indices = buildLcmIndices(pageCount, pagesPerSheet);
+            else indices = buildPaddedIndices(pageCount, pagesPerSheet);
+
+            const rows = pagesPerSheet / 2;
+
+            for (let i = 0; i < indices.length; i += pagesPerSheet) {
+              const chunk = indices.slice(i, i + pagesPerSheet);
+              const pages = chunk.map((idx) => (idx == null ? null : pageInfos[idx]));
+              const existing = pages.filter(Boolean);
+
+              if (!existing.length) continue;
+
+              let outWidth, outHeight;
+              if (isA4) {
+                outWidth = A3_WIDTH;
+                outHeight = A3_HEIGHT;
+              } else {
+                const maxWidth = Math.max(...existing.map((p) => p.width));
+                const maxHeight = Math.max(...existing.map((p) => p.height));
+                outWidth = maxWidth * Math.sqrt(2);
+                outHeight = maxHeight * Math.sqrt(2);
+              }
+
+              const cellWidth = outWidth / 2;
+              const cellHeight = outHeight / rows;
+
+              const placements = pages.map((pageInfo, idx) => {
+                if (!pageInfo) return null;
+                const row = Math.floor(idx / 2);
+                const col = idx % 2;
+                const x = col * cellWidth;
+                const y = cellHeight * (rows - 1 - row);
+                return { pageInfo, x, y, w: cellWidth, h: cellHeight };
+              });
+
+              layout.pages.push({
+                width: outWidth,
+                height: outHeight,
+                placements
+              });
+            }
+          } else {
+            throw new Error("Ungültige Auswahl für Seiten pro Blatt.");
+          }
+
+          return this._buildOutputPdf(layout);
+        }
+      }
+
+      function buildOutputName(baseName, copyCount) {
+        if (copyCount) return `${copyCount} mal drucken - ${baseName}.pdf`;
+        return `Drucken - ${baseName}.pdf`;
+      }
+
+      function deriveCopyCount(pageCount, pagesPerSheet, studentCount, paddingMode, enableThreePageSpecialMode) {
+        if (!studentCount) return null;
+        if (enableThreePageSpecialMode) {
+          return paddingMode === "lcm" ? 1 : Math.ceil(studentCount / 2);
+        }
+        let copyCount = studentCount;
+
+        if (pagesPerSheet === 2 && pageCount % 2 === 1 && !(enableThreePageSpecialMode && pageCount === 3)) {
+          copyCount = Math.ceil(studentCount / 2);
+        }
+
+        if ([4, 6, 8].includes(pagesPerSheet) && paddingMode === "lcm") {
+          const totalSlots = lcm(pageCount, pagesPerSheet);
+          const setsPerOutput = totalSlots / pageCount;
+          if (setsPerOutput > 0) {
+            copyCount = Math.ceil(studentCount / setsPerOutput);
+          }
+        }
+
+        return copyCount;
+      }
+
+      function detectUnsupportedLegacyFeatures(bytes) {
+        const text = bytesToBinaryString(bytes);
+        const features = [];
+        if (/\/ObjStm\b/.test(text)) features.push("Objekt-Streams (/ObjStm)");
+        if (/\/Type\s*\/XRef\b/.test(text) || /\/XRefStm\b/.test(text)) features.push("XRef-Streams");
+        if (/\/Encrypt\b/.test(text)) features.push("Verschluesselung (/Encrypt)");
+        return features;
+      }
+
+      async function loadSourceDocument(inputBytes) {
+        const PDFLib = window.PDFLib;
+        if (PDFLib && PDFLib.PDFDocument) {
+          try {
+            const source = await PDFLib.PDFDocument.load(inputBytes);
+            return { engine: "pdf-lib", source };
+          } catch (error) {
+            throw new Error("PDF konnte nicht gelesen werden (evtl. beschaedigt oder verschluesselt).");
+          }
+        }
+
+        const detected = detectUnsupportedLegacyFeatures(inputBytes);
+        if (detected.length) {
+          throw new Error(
+            "Lokale PDF-Library fehlt und diese PDF verwendet nicht unterstuetzte Strukturen: " +
+            detected.join(", ") +
+            ". Bitte Internetverbindung pruefen, damit pdf-lib geladen werden kann."
+          );
+        }
+
+        try {
+          const source = new SimplePdfDocument(inputBytes);
+          return { engine: "legacy", source };
+        } catch (error) {
+          throw new Error(
+            "PDF-Library fehlt und die eingebaute Fallback-Verarbeitung konnte die PDF nicht sicher lesen. " +
+            "Bitte Internetverbindung pruefen, damit pdf-lib geladen werden kann."
+          );
+        }
+      }
+
+      async function imposeWithPdfLib(sourceDoc, pagesPerSheet, paddingMode, enableThreePageSpecialMode, studentCount) {
+        const PDFLib = window.PDFLib;
+        const pageCount = sourceDoc.getPageCount();
+        if (!pageCount) throw new Error("Die PDF enthaelt keine Seiten.");
+        if (enableThreePageSpecialMode && pageCount !== 3) {
+          throw new Error("Spezialmodus ist nur mit 3-seitiger PDF möglich.");
+        }
+
+        const sourcePages = sourceDoc.getPages();
+        const sourceSizes = sourcePages.map((page) => {
+          const size = page.getSize();
+          return { width: size.width, height: size.height };
+        });
+
+        const isA4 = sourceSizes.every(({ width, height }) => {
+          const portrait = Math.abs(width - A4_WIDTH) <= A4_TOLERANCE && Math.abs(height - A4_HEIGHT) <= A4_TOLERANCE;
+          const landscape = Math.abs(width - A4_HEIGHT) <= A4_TOLERANCE && Math.abs(height - A4_WIDTH) <= A4_TOLERANCE;
+          return portrait || landscape;
+        });
+
+        const outputDoc = await PDFLib.PDFDocument.create();
+        const embeddedPages = await outputDoc.embedPages(sourcePages);
+
+        function drawPlacement(outputPage, pageIndex, x, y, w, h) {
+          if (pageIndex == null) return;
+          const embedded = embeddedPages[pageIndex];
+          if (!embedded) throw new Error("Seiteneinbettung fehlgeschlagen.");
+
+          const scale = Math.min(w / embedded.width, h / embedded.height);
+          const drawWidth = embedded.width * scale;
+          const drawHeight = embedded.height * scale;
+          const drawX = x + (w - drawWidth) / 2;
+          const drawY = y + (h - drawHeight) / 2;
+
+          outputPage.drawPage(embedded, {
+            x: drawX,
+            y: drawY,
+            width: drawWidth,
+            height: drawHeight
+          });
+        }
+
+        if (enableThreePageSpecialMode || pagesPerSheet === 2) {
+          const pairs = enableThreePageSpecialMode
+            ? buildSpecialThreeModePairs(paddingMode, studentCount)
+            : buildTwoUpPairs(pageCount, false);
+
+          for (const [leftIndex, rightIndex] of pairs) {
+            const left = sourceSizes[leftIndex];
+            const right = sourceSizes[rightIndex];
+
+            let outWidth;
+            let outHeight;
+            let halfWidth;
+            if (isA4) {
+              halfWidth = A4_WIDTH;
+              outHeight = A4_HEIGHT;
+              outWidth = A4_WIDTH * 2;
+            } else {
+              halfWidth = Math.max(left.width, right.width);
+              outHeight = Math.max(left.height, right.height);
+              outWidth = halfWidth * 2;
+              if (outWidth < outHeight) {
+                outWidth = outHeight;
+                halfWidth = outWidth / 2;
+              }
+            }
+
+            const outputPage = outputDoc.addPage([outWidth, outHeight]);
+            drawPlacement(outputPage, leftIndex, 0, 0, halfWidth, outHeight);
+            drawPlacement(outputPage, rightIndex, halfWidth, 0, halfWidth, outHeight);
+          }
+        } else if ([4, 6, 8].includes(pagesPerSheet)) {
+          let indices;
+          if (paddingMode === "blank") indices = buildBlankIndices(pageCount, pagesPerSheet);
+          else if (paddingMode === "lcm") indices = buildLcmIndices(pageCount, pagesPerSheet);
+          else indices = buildPaddedIndices(pageCount, pagesPerSheet);
+
+          const rows = pagesPerSheet / 2;
+          for (let i = 0; i < indices.length; i += pagesPerSheet) {
+            const chunk = indices.slice(i, i + pagesPerSheet);
+            const existing = chunk.filter((idx) => idx != null);
+            if (!existing.length) continue;
+
+            let outWidth;
+            let outHeight;
+            if (isA4) {
+              outWidth = A3_WIDTH;
+              outHeight = A3_HEIGHT;
+            } else {
+              const maxWidth = Math.max(...existing.map((idx) => sourceSizes[idx].width));
+              const maxHeight = Math.max(...existing.map((idx) => sourceSizes[idx].height));
+              outWidth = maxWidth * Math.sqrt(2);
+              outHeight = maxHeight * Math.sqrt(2);
+            }
+
+            const cellWidth = outWidth / 2;
+            const cellHeight = outHeight / rows;
+            const outputPage = outputDoc.addPage([outWidth, outHeight]);
+
+            for (let slotIndex = 0; slotIndex < chunk.length; slotIndex += 1) {
+              const pageIndex = chunk[slotIndex];
+              const row = Math.floor(slotIndex / 2);
+              const col = slotIndex % 2;
+              const x = col * cellWidth;
+              const y = cellHeight * (rows - 1 - row);
+              drawPlacement(outputPage, pageIndex, x, y, cellWidth, cellHeight);
+            }
+          }
+        } else {
+          throw new Error("Ungueltige Auswahl fuer Seiten pro Blatt.");
+        }
+
+        return outputDoc.save({ useObjectStreams: false });
+      }
+
+      function chooseEffectivePaddingMode(pageCount, pagesPerSheet, requestedMode) {
+        if (![4, 6, 8].includes(pagesPerSheet)) return null;
+        if (pageCount % pagesPerSheet === 0) return null;
+        return requestedMode === "auto" ? null : requestedMode;
+      }
+
+      function getBaseName(filename) {
+        return filename.replace(/\.pdf$/i, "");
+      }
+
+      function isPdfFile(file) {
+        return Boolean(file && /\.pdf$/i.test(file.name));
+      }
+
+      function buildAppendOutputName(files) {
+        const firstBaseName = getBaseName(files[0]?.name || "PDF");
+        if (files.length === 1) return `Zusammengefuegt - ${firstBaseName}.pdf`;
+        return `Zusammengefuegt - ${firstBaseName} + ${files.length - 1}.pdf`;
+      }
+
+      function getPaddingModeValue() {
+        const selected = ui.paddingModes.find((radio) => radio.checked);
+        return selected ? selected.value : "blank";
+      }
+
+      function setPaddingModeValue(mode) {
+        const target = ui.paddingModes.find((radio) => radio.value === mode);
+        if (target) target.checked = true;
+      }
+
+      function syncStartButtonState() {
+        if (!optionsEnabled || !selectedFile) {
+          ui.startButton.disabled = true;
+          return;
+        }
+        const isLcmWithoutStudentCount = getPaddingModeValue() === "lcm" && !ui.studentCount.value.trim();
+        ui.startButton.disabled = isLcmWithoutStudentCount;
+      }
+
+      function syncAppendStartButtonState() {
+        ui.appendStartButton.disabled = appendFiles.length < 2;
+      }
+
+      function setAppendTotalPagesText(value) {
+        ui.appendTotalPages.textContent = `Gesamtanzahl an Seiten: ${value}`;
+      }
+
+      function getAppendTotalPagesFromCache() {
+        let total = 0;
+        for (const file of appendFiles) {
+          const pageCount = appendPageCountByFile.get(file);
+          if (typeof pageCount === "number") total += pageCount;
+        }
+        return total;
+      }
+
+      async function loadAppendPageCount(file) {
+        if (appendPageCountByFile.has(file)) {
+          return appendPageCountByFile.get(file);
+        }
+        const inputBytes = new Uint8Array(await file.arrayBuffer());
+        try {
+          const loaded = await loadSourceDocument(inputBytes);
+          const pageCount = loaded.source.getPageCount();
+          if (!Number.isInteger(pageCount) || pageCount < 0) {
+            throw new Error("Ungueltige Seitenzahl.");
+          }
+          appendPageCountByFile.set(file, pageCount);
+          return pageCount;
+        } catch (firstError) {
+          if (!(window.PDFLib && window.PDFLib.PDFDocument)) {
+            try {
+              await ensurePdfLibLoaded();
+              const loaded = await loadSourceDocument(inputBytes);
+              const pageCount = loaded.source.getPageCount();
+              if (!Number.isInteger(pageCount) || pageCount < 0) {
+                throw new Error("Ungueltige Seitenzahl.");
+              }
+              appendPageCountByFile.set(file, pageCount);
+              return pageCount;
+            } catch (secondError) {
+              console.warn(`Seitenzahl konnte nicht ermittelt werden: ${file.name}`, secondError);
+            }
+          } else {
+            console.warn(`Seitenzahl konnte nicht ermittelt werden: ${file.name}`, firstError);
+          }
+          appendPageCountByFile.set(file, null);
+          return null;
+        }
+      }
+
+      async function refreshAppendTotalPages() {
+        const token = ++appendPageCountProbeToken;
+        if (!appendFiles.length) {
+          setAppendTotalPagesText("0");
+          return;
+        }
+
+        setAppendTotalPagesText(String(getAppendTotalPagesFromCache()));
+
+        for (const file of appendFiles) {
+          if (!appendPageCountByFile.has(file)) {
+            await loadAppendPageCount(file);
+            if (token !== appendPageCountProbeToken) return;
+          }
+        }
+
+        if (token !== appendPageCountProbeToken) return;
+        setAppendTotalPagesText(String(getAppendTotalPagesFromCache()));
+      }
+
+      function renderAppendFileList() {
+        const fragment = document.createDocumentFragment();
+        appendFiles.forEach((file, index) => {
+          const row = document.createElement("div");
+          row.className = "file-item";
+          row.draggable = true;
+          row.dataset.fileIndex = String(index);
+          row.title = "Reihenfolge per Drag-and-Drop aendern";
+
+          const dragHint = document.createElement("span");
+          dragHint.className = "file-drag";
+          dragHint.textContent = "⋮⋮";
+          dragHint.setAttribute("aria-hidden", "true");
+
+          const name = document.createElement("span");
+          name.className = "file-item-name";
+          name.textContent = `${index + 1}. ${file.name}`;
+
+          const removeButton = document.createElement("button");
+          removeButton.type = "button";
+          removeButton.className = "file-delete";
+          removeButton.dataset.removeIndex = String(index);
+          removeButton.setAttribute("aria-label", `${file.name} entfernen`);
+          removeButton.title = "Datei entfernen";
+          removeButton.textContent = "🗑";
+          removeButton.draggable = false;
+
+          row.append(dragHint, name, removeButton);
+          fragment.append(row);
+        });
+
+        ui.appendFileList.replaceChildren(fragment);
+        syncAppendStartButtonState();
+        void refreshAppendTotalPages();
+      }
+
+      async function addSharedFiles(fileList) {
+        if (!fileList || !fileList.length) return;
+
+        const accepted = [];
+        let rejectedCount = 0;
+        for (const file of fileList) {
+          if (isPdfFile(file)) accepted.push(file);
+          else rejectedCount += 1;
+        }
+
+        if (rejectedCount > 0) {
+          const text = rejectedCount === 1
+            ? "1 Datei wurde ignoriert, weil sie keine .pdf-Endung hat."
+            : `${rejectedCount} Dateien wurden ignoriert, weil sie keine .pdf-Endung haben.`;
+          showResultDialog(text, "warn", "Hinweis");
+        }
+
+        if (!accepted.length) return;
+        appendFiles = appendFiles.concat(accepted);
+        renderAppendFileList();
+        await setSelectedFile(accepted[0]);
+      }
+
+      function openSharedPdfPicker() {
+        ui.sharedPdfInput.click();
+      }
+
+      function clearAppendDropMarkers() {
+        for (const row of ui.appendFileList.querySelectorAll(".file-item")) {
+          row.classList.remove("drop-before", "drop-after", "dragging");
+        }
+      }
+
+      function computeAppendDropIndex(clientY) {
+        const rows = [...ui.appendFileList.querySelectorAll(".file-item:not(.dragging)")];
+        let index = rows.length;
+        for (let i = 0; i < rows.length; i += 1) {
+          const rect = rows[i].getBoundingClientRect();
+          if (clientY < rect.top + rect.height / 2) {
+            index = i;
+            break;
+          }
+        }
+        return index;
+      }
+
+      function renderAppendDropMarker(index) {
+        const rows = [...ui.appendFileList.querySelectorAll(".file-item:not(.dragging)")];
+        rows.forEach((row) => row.classList.remove("drop-before", "drop-after"));
+        if (!rows.length) return;
+        if (index >= rows.length) {
+          rows[rows.length - 1].classList.add("drop-after");
+        } else {
+          rows[index].classList.add("drop-before");
+        }
+      }
+
+      function setPagesPerSheetSelection(value) {
+        pagesPerSheet = value;
+        renderPagesPerSheetSelection();
+      }
+
+      function renderPagesPerSheetSelection() {
+        for (const button of ui.pagesButtons) {
+          const active = !specialThreeModeEnabled && Number(button.dataset.pages) === pagesPerSheet;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-pressed", String(active));
+        }
+      }
+
+      function syncPagesButtonsDisabledState() {
+        for (const button of ui.pagesButtons) {
+          button.disabled = !optionsEnabled;
+        }
+      }
+
+      function setSpecialThreeModeAvailability(available) {
+        specialThreeModeAvailable = available;
+        ui.specialThreeModeButton.disabled = !optionsEnabled || !specialThreeModeAvailable;
+        ui.specialThreeModeButton.title = available
+          ? "Spezialmodus für 3-seitige PDF: 1|1 + 2|3"
+          : "Nur bei 3-seitiger PDF verfügbar";
+        if (!available && specialThreeModeEnabled) {
+          specialThreeModeEnabled = false;
+          ui.specialThreeModeButton.setAttribute("aria-pressed", "false");
+          renderPagesPerSheetSelection();
+        }
+        syncPagesButtonsDisabledState();
+      }
+
+      async function updateSpecialThreeModeAvailability(file) {
+        const token = ++specialModeProbeToken;
+        setSpecialThreeModeAvailability(false);
+        if (!file) return;
+
+        try {
+          // Für die Seitenzahl-Prüfung möglichst dieselbe Engine nutzen wie später beim Start.
+          if (!(window.PDFLib && window.PDFLib.PDFDocument)) {
+            try {
+              await ensurePdfLibLoaded();
+            } catch (_) {
+              // Fallback auf lokale Parser-Logik in loadSourceDocument.
+            }
+          }
+          const arrayBuffer = await file.arrayBuffer();
+          if (token !== specialModeProbeToken || file !== selectedFile) return;
+          const inputBytes = new Uint8Array(arrayBuffer);
+          const loaded = await loadSourceDocument(inputBytes);
+          if (token !== specialModeProbeToken || file !== selectedFile) return;
+          const pageCount = loaded.source.getPageCount();
+          setSpecialThreeModeAvailability(pageCount === 3);
+        } catch (error) {
+          if (token !== specialModeProbeToken || file !== selectedFile) return;
+          setSpecialThreeModeAvailability(false);
+          maybeShowMacOSPermissionHint(error);
+        }
+      }
+
+      function setOptionsEnabled(enabled) {
+        optionsEnabled = enabled;
+        ui.optionsPanel.classList.toggle("options-disabled", !enabled);
+        ui.optionsPanel.setAttribute("aria-disabled", String(!enabled));
+        ui.dropZone.classList.toggle("awaiting-file", !enabled);
+        ui.dropHint.classList.toggle("hidden", enabled);
+        syncPagesButtonsDisabledState();
+        ui.studentCount.disabled = !enabled;
+        for (const radio of ui.paddingModes) {
+          radio.disabled = !enabled;
+        }
+        if (!enabled) setSpecialThreeModeAvailability(false);
+        else ui.specialThreeModeButton.disabled = !specialThreeModeAvailable;
+        syncStartButtonState();
+      }
+
+      async function handleStart() {
+        if (!selectedFile) {
+          showResultDialog("Bitte zuerst eine PDF-Datei auswaehlen.", "warn", "Hinweis");
+          return;
+        }
+
+        const studentText = ui.studentCount.value.trim();
+        const studentCount = studentText ? Number(studentText) : null;
+        if (studentText && (!Number.isInteger(studentCount) || studentCount <= 0)) {
+          showResultDialog("Die Anzahl Lernende muss eine ganze Zahl groesser 0 sein.", "warn", "Hinweis");
+          return;
+        }
+
+        ui.startButton.disabled = true;
+
+        try {
+          if (!(window.PDFLib && window.PDFLib.PDFDocument)) {
+            showBusyDialog("PDF-Engine wird geladen ...");
+            try {
+              await ensurePdfLibLoaded();
+            } catch (error) {
+              console.warn("PDF-Library konnte nicht vorab geladen werden:", error);
+            } finally {
+              hideBusyDialog();
+            }
+          }
+
+          const arrayBuffer = await selectedFile.arrayBuffer();
+          const inputBytes = new Uint8Array(arrayBuffer);
+          const loaded = await loadSourceDocument(inputBytes);
+          const source = loaded.source;
+          const engine = loaded.engine;
+
+          const pageCount = source.getPageCount();
+          if (!pageCount) throw new Error("Die PDF enthaelt keine Seiten.");
+
+          const effectivePaddingMode = specialThreeModeEnabled
+            ? getPaddingModeValue()
+            : chooseEffectivePaddingMode(
+              pageCount,
+              pagesPerSheet,
+              getPaddingModeValue()
+            );
+
+          if (effectivePaddingMode === "lcm" && !studentCount) {
+            throw new Error("Für 'Auffüllen nach Anzahl der Lernenden' muss eine Anzahl Lernende eingetragen sein.");
+          }
+
+          let outBytes;
+          if (engine === "pdf-lib") {
+            outBytes = await imposeWithPdfLib(source, pagesPerSheet, effectivePaddingMode, specialThreeModeEnabled, studentCount);
+          } else {
+            const imposer = new OfflineImposer(source);
+            outBytes = imposer.impose(pagesPerSheet, effectivePaddingMode, specialThreeModeEnabled, studentCount);
+          }
+
+          const copyCount = deriveCopyCount(
+            pageCount,
+            pagesPerSheet,
+            studentCount,
+            effectivePaddingMode,
+            specialThreeModeEnabled
+          );
+
+          const outputName = buildOutputName(getBaseName(selectedFile.name), copyCount);
+          const blob = new Blob([outBytes], { type: "application/pdf" });
+          const shareResult = await tryShareMergedPdfOnIOS(blob, outputName);
+
+          if (shareResult.handled) {
+            if (shareResult.status === "cancelled") {
+              showResultDialog(`PDF wurde erstellt, Teilen wurde abgebrochen.\n${outputName}`, "warn", "Hinweis");
+            } else {
+              showResultDialog(`PDF erfolgreich erstellt.\n${outputName}`, "ok", "");
+            }
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = outputName;
+          anchor.click();
+
+          setTimeout(() => URL.revokeObjectURL(url), 10_000);
+          showResultDialog(`PDF erfolgreich erstellt.\n${outputName}`, "ok", "");
+        } catch (error) {
+          console.error(error);
+          if (maybeShowMacOSPermissionHint(error)) return;
+          const message = error && error.message ? error.message : "PDF konnte nicht verarbeitet werden.";
+          showResultDialog(message, "error", "Fehler");
+        } finally {
+          syncStartButtonState();
+        }
+      }
+
+      async function handleAppendStart() {
+        if (appendFiles.length < 2) {
+          showResultDialog("Bitte mindestens zwei PDF-Dateien auswaehlen.", "warn", "Hinweis");
+          return;
+        }
+
+        ui.appendStartButton.disabled = true;
+        try {
+          if (!(window.PDFLib && window.PDFLib.PDFDocument)) {
+            showBusyDialog("PDF-Engine wird geladen ...");
+            await ensurePdfLibLoaded();
+            hideBusyDialog();
+          }
+
+          const PDFLib = window.PDFLib;
+          if (!(PDFLib && PDFLib.PDFDocument)) {
+            throw new Error("Die PDF-Library konnte nicht geladen werden.");
+          }
+
+          const outputDoc = await PDFLib.PDFDocument.create();
+          for (const file of appendFiles) {
+            const bytes = new Uint8Array(await file.arrayBuffer());
+            let sourceDoc;
+            try {
+              sourceDoc = await PDFLib.PDFDocument.load(bytes);
+            } catch (_) {
+              throw new Error(`"${file.name}" konnte nicht gelesen werden (evtl. beschaedigt oder verschluesselt).`);
+            }
+
+            const copiedPages = await outputDoc.copyPages(sourceDoc, sourceDoc.getPageIndices());
+            for (const page of copiedPages) {
+              outputDoc.addPage(page);
+            }
+          }
+
+          if (!outputDoc.getPageCount()) {
+            throw new Error("Die ausgewaehlten PDFs enthalten keine Seiten.");
+          }
+
+          const outBytes = await outputDoc.save({ useObjectStreams: false });
+          const outputName = buildAppendOutputName(appendFiles);
+          const blob = new Blob([outBytes], { type: "application/pdf" });
+          const shareResult = await tryShareMergedPdfOnIOS(blob, outputName);
+
+          if (shareResult.handled) {
+            if (shareResult.status === "cancelled") {
+              showResultDialog(`PDF wurde erstellt, Teilen wurde abgebrochen.\n${outputName}`, "warn", "Hinweis");
+            } else {
+              showResultDialog(`PDFs erfolgreich zusammengefuehrt.\n${outputName}`, "ok", "");
+            }
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = outputName;
+          anchor.click();
+
+          setTimeout(() => URL.revokeObjectURL(url), 10_000);
+          showResultDialog(`PDFs erfolgreich zusammengefuehrt.\n${outputName}`, "ok", "");
+        } catch (error) {
+          console.error(error);
+          if (maybeShowMacOSPermissionHint(error)) return;
+          const message = error && error.message ? error.message : "PDFs konnten nicht zusammengefuehrt werden.";
+          showResultDialog(message, "error", "Fehler");
+        } finally {
+          hideBusyDialog();
+          syncAppendStartButtonState();
+        }
+      }
+
+      async function setSelectedFile(file) {
+        if (!file) return;
+        if (!isPdfFile(file)) {
+          showResultDialog("Bitte eine Datei mit .pdf-Endung waehlen.", "warn", "Hinweis");
+          return;
+        }
+        selectedFile = file;
+        ui.fileName.textContent = file.name;
+        setOptionsEnabled(true);
+        await updateSpecialThreeModeAvailability(file);
+      }
+
+      ui.dropZone.addEventListener("click", () => openSharedPdfPicker());
+      ui.dropZone.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openSharedPdfPicker();
+        }
+      });
+
+      ui.sharedPdfInput.addEventListener("change", async () => {
+        const files = [...(ui.sharedPdfInput.files || [])];
+        if (!files.length) return;
+        await addSharedFiles(files);
+        ui.sharedPdfInput.value = "";
+      });
+      ui.appendFileList.addEventListener("dragstart", (event) => {
+        const row = event.target.closest(".file-item");
+        if (!row) return;
+        const index = Number(row.dataset.fileIndex);
+        if (!Number.isInteger(index)) return;
+        appendDragIndex = index;
+        appendDropIndex = null;
+        row.classList.add("dragging");
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", String(index));
+        }
+      });
+      ui.appendFileList.addEventListener("dragover", (event) => {
+        if (appendDragIndex == null) {
+          const files = [...(event.dataTransfer?.files || [])];
+          if (files.length) {
+            event.preventDefault();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = "none";
+          }
+          return;
+        }
+        event.preventDefault();
+        appendDropIndex = computeAppendDropIndex(event.clientY);
+        renderAppendDropMarker(appendDropIndex);
+        if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      });
+      ui.appendFileList.addEventListener("drop", (event) => {
+        if (appendDragIndex == null) {
+          const files = [...(event.dataTransfer?.files || [])];
+          if (!files.length) return;
+          event.preventDefault();
+          event.stopPropagation();
+          showResultDialog("Bitte PDFs im gemeinsamen Feld links hinzufügen.", "warn", "Hinweis");
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        const toIndex = appendDropIndex == null
+          ? computeAppendDropIndex(event.clientY)
+          : appendDropIndex;
+
+        clearAppendDropMarkers();
+        appendDropIndex = null;
+
+        if (!Number.isInteger(appendDragIndex) || !Number.isInteger(toIndex)) {
+          appendDragIndex = null;
+          return;
+        }
+        if (appendDragIndex < 0 || appendDragIndex >= appendFiles.length) {
+          appendDragIndex = null;
+          return;
+        }
+        if (toIndex < 0 || toIndex > appendFiles.length - 1) {
+          appendDragIndex = null;
+          return;
+        }
+
+        const movedFile = appendFiles[appendDragIndex];
+        appendFiles.splice(appendDragIndex, 1);
+        appendFiles.splice(toIndex, 0, movedFile);
+        appendDragIndex = null;
+        renderAppendFileList();
+      });
+      ui.appendFileList.addEventListener("dragend", () => {
+        appendDragIndex = null;
+        appendDropIndex = null;
+        clearAppendDropMarkers();
+      });
+      ui.appendFileList.addEventListener("click", (event) => {
+        const removeButton = event.target.closest("button[data-remove-index]");
+        if (!removeButton) return;
+        event.stopPropagation();
+        const index = Number(removeButton.dataset.removeIndex);
+        if (!Number.isInteger(index)) return;
+        if (index < 0 || index >= appendFiles.length) return;
+        appendFiles.splice(index, 1);
+        renderAppendFileList();
+      });
+
+      ui.studentCount.addEventListener("input", () => {
+        const raw = ui.studentCount.value.trim();
+        const hasValidCount = raw !== "" && Number(raw) > 0;
+        const currentMode = getPaddingModeValue();
+
+        if (hasValidCount && currentMode === "blank") {
+          setPaddingModeValue("lcm");
+        } else if (!hasValidCount && currentMode === "lcm") {
+          setPaddingModeValue("blank");
+        }
+        syncStartButtonState();
+      });
+
+      for (const radio of ui.paddingModes) {
+        radio.addEventListener("change", syncStartButtonState);
+      }
+
+      ui.dropZone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        ui.dropZone.classList.add("dragover");
+      });
+
+      ui.dropZone.addEventListener("dragleave", () => {
+        ui.dropZone.classList.remove("dragover");
+      });
+
+      ui.dropZone.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        ui.dropZone.classList.remove("dragover");
+        const files = [...(event.dataTransfer?.files || [])];
+        await addSharedFiles(files);
+      });
+
+      for (const button of ui.pagesButtons) {
+        button.addEventListener("click", () => {
+          if (specialThreeModeEnabled) {
+            specialThreeModeEnabled = false;
+            ui.specialThreeModeButton.setAttribute("aria-pressed", "false");
+          }
+          setPagesPerSheetSelection(Number(button.dataset.pages));
+        });
+      }
+      ui.specialThreeModeButton.addEventListener("click", () => {
+        specialThreeModeEnabled = !specialThreeModeEnabled;
+        ui.specialThreeModeButton.setAttribute("aria-pressed", String(specialThreeModeEnabled));
+        renderPagesPerSheetSelection();
+        syncPagesButtonsDisabledState();
+      });
+      ui.startButton.addEventListener("click", handleStart);
+      ui.appendStartButton.addEventListener("click", handleAppendStart);
+      ui.themeDark.addEventListener("change", () => {
+        if (ui.themeDark.checked) applyTheme("dark");
+      });
+      ui.themeLight.addEventListener("change", () => {
+        if (ui.themeLight.checked) applyTheme("light");
+      });
+      ui.settingsButton.addEventListener("click", showSettingsDialog);
+      ui.settingsCloseButton.addEventListener("click", hideSettingsDialog);
+      ui.settingsDialog.addEventListener("close", () => {
+        ui.settingsDialog.classList.add("hidden");
+        syncDialogUiState();
+      });
+      ui.resultCloseButton.addEventListener("click", hideResultDialog);
+      ui.resultDialog.addEventListener("close", () => {
+        ui.resultDialog.classList.add("hidden");
+        syncDialogUiState();
+      });
+      ui.busyDialog.addEventListener("close", () => {
+        ui.busyDialog.classList.add("hidden");
+        syncDialogUiState();
+      });
+
+      if ("serviceWorker" in navigator) {
+        setupServiceWorker();
+      }
+      setOptionsEnabled(false);
+      renderAppendFileList();
+      initTheme();
+    })();
+  </script>
+</body>
+</html>
