@@ -1,4 +1,4 @@
-const VERSION = 1;
+const VERSION = 2;
 const APP_VARIANT = `${VERSION}`;
 const CACHE_NAME = `merger-pwa-v${VERSION}`;
 const PDF_LIB_CDN_URL = "https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js";

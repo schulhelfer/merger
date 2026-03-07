@@ -122,7 +122,8 @@
       margin-bottom: 0;
     }
     .cards-layout .card-head + .grid,
-    .cards-layout .card-head + .field {
+    .cards-layout .card-head + .field,
+    .cards-layout .card-head + .append-content {
       margin-top: 18px;
     }
     body.dialog-active .app {
@@ -175,7 +176,7 @@
     .drop {
       border: 1.5px dashed color-mix(in srgb, var(--accent) 28%, var(--line));
       border-radius: 18px;
-      min-height: 220px;
+      min-height: clamp(140px, 22vh, 220px);
       display: grid;
       place-items: center;
       padding: 20px;
@@ -185,6 +186,9 @@
       cursor: pointer;
       user-select: none;
       transition: border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+    #dropZone {
+      margin-top: 16px;
     }
     .drop.awaiting-file {
       border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
@@ -217,6 +221,14 @@
       gap: 8px;
       text-align: left;
     }
+    #inputFileList {
+      display: inline-grid;
+      gap: 8px;
+      width: fit-content;
+      max-width: 100%;
+      margin-inline: auto;
+      justify-items: stretch;
+    }
     .file-item {
       display: flex;
       align-items: center;
@@ -229,18 +241,44 @@
       box-shadow: var(--inner);
       cursor: grab;
       transition: border-color .15s ease, opacity .15s ease;
+      position: relative;
+    }
+    #inputFileList .file-item {
+      cursor: pointer;
+      width: 100%;
+      min-width: 100px;
+      max-width: none;
+      display: flex;
+      justify-content: flex-start;
+    }
+    #inputFileList .file-item-name {
+      flex: 1 1 auto;
+      max-width: none;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      overflow-wrap: anywhere;
     }
     .file-item.dragging {
       opacity: .48;
       cursor: grabbing;
     }
-    .file-item.drop-before {
-      border-top: 3px solid color-mix(in srgb, var(--accent) 80%, var(--line));
-      padding-top: 6px;
+    .file-item.drop-before::before,
+    .file-item.drop-after::after {
+      content: "";
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      height: 3px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 86%, var(--line));
+      pointer-events: none;
     }
-    .file-item.drop-after {
-      border-bottom: 3px solid color-mix(in srgb, var(--accent) 80%, var(--line));
-      padding-bottom: 6px;
+    .file-item.drop-before::before {
+      top: -7px;
+    }
+    .file-item.drop-after::after {
+      bottom: -7px;
     }
     .file-drag {
       color: var(--muted);
@@ -258,6 +296,9 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .file-item-name.selected {
+      font-weight: 900;
     }
     .file-delete {
       width: 30px;
@@ -290,6 +331,10 @@
       color: var(--muted);
       font-size: .94rem;
     }
+    .current-file-name {
+      text-align: center;
+      margin-top: 10px;
+    }
     .grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -300,7 +345,8 @@
       .grid {
         grid-template-columns: 1fr 1fr;
       }
-      .grid > .field:only-child {
+      .grid > .field:only-child,
+      .grid > .options-panel:only-child {
         grid-column: 1 / -1;
       }
     }
@@ -314,12 +360,12 @@
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
     }
-    .field.options-disabled {
+    .options-panel.options-disabled {
       opacity: .52;
     }
-    .field.options-disabled .pages button,
-    .field.options-disabled input,
-    .field.options-disabled .padding-choice label {
+    .options-panel.options-disabled .pages button,
+    .options-panel.options-disabled input,
+    .options-panel.options-disabled .padding-choice label {
       cursor: not-allowed;
     }
     .pages button:disabled {
@@ -396,19 +442,37 @@
       display: grid;
       place-items: center;
       border: 1.6px solid color-mix(in srgb, var(--line) 72%, transparent);
+      box-sizing: border-box;
       font-size: .92rem;
       line-height: 1;
       color: var(--accent);
       font-weight: 700;
       background: color-mix(in srgb, var(--accent-soft) 22%, var(--glass));
+      min-width: 0;
       min-height: 0;
+      justify-self: center;
+      align-self: center;
+      width: auto;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 0.7071;
     }
     .stack-2 .mini-sheet { grid-template-rows: repeat(1, 1fr); }
     .stack-4 .mini-sheet { grid-template-rows: repeat(2, 1fr); }
     .stack-6 .mini-sheet { grid-template-rows: repeat(3, 1fr); }
     .stack-8 .mini-sheet { grid-template-rows: repeat(4, 1fr); }
+    .stack-4 .mini-sheet span,
+    .stack-6 .mini-sheet span,
+    .stack-8 .mini-sheet span {
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 1.4142;
+    }
     .pages button.special-toggle {
-      padding: 14px 12px;
+      padding: 4px;
     }
     .pages button.special-toggle[aria-pressed="true"] {
       border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
@@ -416,11 +480,16 @@
       box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 18%, transparent), var(--inner);
     }
     .special-icon {
-      width: 84px;
-      height: 84px;
+      width: 100%;
+      height: 100%;
+      --special-gap: 4px;
       display: grid;
-      align-content: center;
-      gap: 6px;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      justify-self: stretch;
+      align-self: stretch;
+      justify-items: center;
+      align-items: stretch;
+      gap: var(--special-gap);
     }
     .special-sheet {
       border: 1.6px solid color-mix(in srgb, var(--line) 82%, transparent);
@@ -430,18 +499,33 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 2px;
       padding: 3px;
-      min-height: 24px;
+      min-height: 0;
+      height: 100%;
+      width: auto;
+      max-width: 100%;
+      aspect-ratio: 1.4142;
+      justify-self: center;
+      overflow: hidden;
     }
     .special-sheet span {
       display: grid;
       place-items: center;
       border: 1.6px solid color-mix(in srgb, var(--line) 72%, transparent);
+      box-sizing: border-box;
       font-size: .92rem;
       line-height: 1;
       color: var(--accent);
       font-weight: 700;
       background: color-mix(in srgb, var(--accent-soft) 22%, var(--glass));
+      min-width: 0;
       min-height: 0;
+      justify-self: center;
+      align-self: center;
+      width: auto;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 0.7071;
     }
     label {
       display: block;
@@ -496,6 +580,14 @@
       color: inherit;
     }
     .padding-choice label {
+      margin: 0;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .auto-orientation-choice {
       margin: 0;
       display: inline-flex;
       gap: 8px;
@@ -660,15 +752,15 @@
         border-radius: 12px;
       }
       .pages button.special-toggle {
-        padding: 10px;
+        padding: 4px;
       }
-      .mini-sheet,
-      .special-icon {
+      .mini-sheet {
         width: 72px;
         height: 72px;
       }
       .special-icon {
-        gap: 5px;
+        width: 100%;
+        height: 100%;
       }
       .mini-sheet span,
       .special-sheet span {
@@ -696,10 +788,13 @@
       .pages {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-      .mini-sheet,
-      .special-icon {
+      .mini-sheet {
         width: 68px;
         height: 68px;
+      }
+      .special-icon {
+        width: 100%;
+        height: 100%;
       }
       .special-sheet span,
       .mini-sheet span {
@@ -726,7 +821,7 @@
             <strong>PDF hierhin ziehen</strong>
             <div>oder klicken zum Auswählen</div>
           </div>
-          <div id="fileName" class="filename"></div>
+          <div id="inputFileList" class="file-list"></div>
         </div>
       </div>
     </section>
@@ -734,10 +829,11 @@
     <div class="cards-layout">
       <section class="card">
         <div class="card-head">
-          <h2 class="card-title">Seiten zusammenführen</h2>
+          <h2 class="card-title">Seiten einer PDF-Datei zusammenführen</h2>
         </div>
+        <div id="selectedFileNameLine" class="card-subtitle current-file-name">Keine Datei ausgewählt</div>
         <div class="grid">
-          <section id="optionsPanel" class="field options-disabled" aria-disabled="true">
+          <section id="optionsPanel" class="options-panel options-disabled" aria-disabled="true">
             <h2 class="section-title">Seiten pro Blatt</h2>
             <div class="pages" id="pagesButtons">
               <button type="button" data-pages="2" class="stack-2 active" aria-pressed="true">
@@ -769,6 +865,10 @@
             </div>
 
             <div class="setting-group">
+              <label class="auto-orientation-choice"><input id="autoOrientationToggle" type="checkbox" checked> Ausrichtung (hoch vs. quer) automatisch optimieren</label>
+            </div>
+
+            <div class="setting-group">
               <label class="section-title" for="studentCount">Anzahl Lernende (optional)</label>
               <input id="studentCount" type="number" min="1" step="1" placeholder="">
             </div>
@@ -791,15 +891,14 @@
 
       <section class="card">
         <div class="card-head">
-          <h2 class="card-title">PDFs zusammenführen</h2>
+          <h2 class="card-title">Mehrere PDF-Dateien zusammenführen</h2>
         </div>
-        <div class="field">
-          <div class="section-title">Dateiliste</div>
-          <div id="appendTotalPages" class="hint">Gesamtanzahl an Seiten: 0</div>
+        <div class="append-content">
+          <div class="section-title">Dateiliste <span id="appendTotalPages" class="hint">(Gesamtseitenanzahl: 0)</span></div>
           <div id="appendFileList" class="file-list"></div>
         </div>
         <div class="controls">
-          <button id="appendStartButton" class="start" type="button">Zusammenführen</button>
+          <button id="appendStartButton" class="start" type="button">Start</button>
         </div>
       </section>
     </div>
@@ -820,6 +919,7 @@
     <p id="resultTitle" class="settings-title">Hinweis</p>
     <p id="resultMessage" class="result-message"></p>
     <div class="update-actions">
+      <button id="resultOpenButton" class="btn-small hidden" type="button">Öffnen</button>
       <button id="resultCloseButton" class="btn-small primary" type="button">OK</button>
     </div>
   </dialog>
@@ -842,12 +942,14 @@
         sharedPdfInput: document.getElementById("sharedPdfInput"),
         dropZone: document.getElementById("dropZone"),
         dropHint: document.getElementById("dropHint"),
-        fileName: document.getElementById("fileName"),
+        inputFileList: document.getElementById("inputFileList"),
+        selectedFileNameLine: document.getElementById("selectedFileNameLine"),
         appendTotalPages: document.getElementById("appendTotalPages"),
         appendFileList: document.getElementById("appendFileList"),
         appendStartButton: document.getElementById("appendStartButton"),
         optionsPanel: document.getElementById("optionsPanel"),
         pagesButtons: [...document.querySelectorAll("#pagesButtons button[data-pages]")],
+        autoOrientationToggle: document.getElementById("autoOrientationToggle"),
         studentCount: document.getElementById("studentCount"),
         paddingModes: [...document.querySelectorAll('input[name="paddingMode"]')],
         specialThreeModeButton: document.getElementById("specialThreeModeButton"),
@@ -861,6 +963,7 @@
         resultDialog: document.getElementById("resultDialog"),
         resultTitle: document.getElementById("resultTitle"),
         resultMessage: document.getElementById("resultMessage"),
+        resultOpenButton: document.getElementById("resultOpenButton"),
         resultCloseButton: document.getElementById("resultCloseButton"),
         busyDialog: document.getElementById("busyDialog"),
         busyTitle: document.getElementById("busyTitle"),
@@ -880,6 +983,7 @@
       let specialModeProbeToken = 0;
       let swRegistration = null;
       let pdfLibLoadPromise = null;
+      let resultOpenUrl = null;
       const THEME_STORAGE_KEY = "merger-theme";
       const PDF_LIB_CDN_URL = "https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js";
       const MACOS_PERMISSION_HINT_MESSAGE = [
@@ -1010,11 +1114,13 @@
         syncDialogUiState();
       }
 
-      function showResultDialog(message, tone = "warn", title = "Hinweis") {
+      function showResultDialog(message, tone = "warn", title = "Hinweis", openUrl = null) {
         const hasTitle = Boolean(title && String(title).trim());
         ui.resultTitle.textContent = hasTitle ? title : "";
         ui.resultTitle.classList.toggle("hidden", !hasTitle);
         ui.resultMessage.textContent = message;
+        resultOpenUrl = openUrl;
+        ui.resultOpenButton.classList.toggle("hidden", !resultOpenUrl);
         ui.resultDialog.setAttribute("data-tone", tone);
         ui.resultDialog.classList.remove("hidden");
         if (typeof ui.resultDialog.showModal === "function") {
@@ -1026,6 +1132,8 @@
       }
 
       function hideResultDialog() {
+        resultOpenUrl = null;
+        ui.resultOpenButton.classList.add("hidden");
         if (typeof ui.resultDialog.close === "function" && ui.resultDialog.open) {
           ui.resultDialog.close();
         } else {
@@ -1941,27 +2049,57 @@
             : { width: pageInfo.width, height: pageInfo.height };
         }
 
-        _placementMatrix(pageInfo, xOffset, yOffset, cellWidth, cellHeight) {
+        _computeDisplayRotationForPlacements(placements, autoOrientationEnabled) {
+          const rotations = [];
+          for (const slot of placements) {
+            if (!slot || !slot.pageInfo) continue;
+            const effective = this._effectivePageSize(slot.pageInfo);
+            const fit = chooseBestSlotOrientation(
+              effective.width,
+              effective.height,
+              slot.w,
+              slot.h,
+              autoOrientationEnabled
+            );
+            rotations.push(fit.rotate90 ? 90 : 0);
+          }
+          if (!rotations.length) return null;
+          return rotations.every((value) => value === rotations[0]) ? rotations[0] : null;
+        }
+
+        _placementMatrix(pageInfo, xOffset, yOffset, cellWidth, cellHeight, autoOrientationEnabled) {
           const [llx, lly] = pageInfo.viewBox;
           const t0 = [1, 0, 0, 1, -llx, -lly];
           const rot = this._rotationMatrix(pageInfo.rotate, pageInfo.width, pageInfo.height);
           const effective = this._effectivePageSize(pageInfo);
+          const fit = chooseBestSlotOrientation(
+            effective.width,
+            effective.height,
+            cellWidth,
+            cellHeight,
+            autoOrientationEnabled
+          );
 
-          const scale = Math.min(cellWidth / effective.width, cellHeight / effective.height);
-          const drawnWidth = effective.width * scale;
-          const drawnHeight = effective.height * scale;
+          let baseMatrix = matrixMultiply(rot, t0);
+          if (fit.rotate90) {
+            const autoRotate = this._rotationMatrix(90, effective.width, effective.height);
+            baseMatrix = matrixMultiply(autoRotate, baseMatrix);
+          }
+
+          const drawnWidth = fit.orientedWidth * fit.scale;
+          const drawnHeight = fit.orientedHeight * fit.scale;
           const tx = xOffset + (cellWidth - drawnWidth) / 2;
           const ty = yOffset + (cellHeight - drawnHeight) / 2;
-          const st = [scale, 0, 0, scale, tx, ty];
+          const st = [fit.scale, 0, 0, fit.scale, tx, ty];
 
-          return matrixMultiply(st, matrixMultiply(rot, t0));
+          return matrixMultiply(st, baseMatrix);
         }
 
-        _buildContentCommands(placements) {
+        _buildContentCommands(placements, autoOrientationEnabled) {
           const lines = [];
           for (const item of placements) {
             if (!item) continue;
-            const matrix = this._placementMatrix(item.pageInfo, item.x, item.y, item.w, item.h);
+            const matrix = this._placementMatrix(item.pageInfo, item.x, item.y, item.w, item.h, autoOrientationEnabled);
             lines.push("q");
             lines.push(matrixToPdf(matrix) + " cm");
             for (const name of item.names) {
@@ -1972,7 +2110,7 @@
           return lines.join("\n") + "\n";
         }
 
-        _buildOutputPdf(layout) {
+        _buildOutputPdf(layout, autoOrientationEnabled) {
           const pagesRootNum = this.writer.reserveObject();
           const pageObjectNums = [];
 
@@ -2004,11 +2142,12 @@
                 : "<< >>"
             );
 
-            const contentBytes = asciiBytes(this._buildContentCommands(placements));
+            const contentBytes = asciiBytes(this._buildContentCommands(placements, autoOrientationEnabled));
             const contentRef = this.writer.addStreamObject("<< >>", contentBytes);
+            const rotatePart = outputPage.displayRotation == null ? "" : ` /Rotate ${outputPage.displayRotation}`;
 
             const pageRef = this.writer.addObject(
-              `<< /Type /Page /Parent ${pagesRootNum} 0 R /MediaBox [0 0 ${fmtNumber(outputPage.width)} ${fmtNumber(outputPage.height)}] /Resources ${resourcesRef} 0 R /Contents ${contentRef} 0 R >>`
+              `<< /Type /Page /Parent ${pagesRootNum} 0 R /MediaBox [0 0 ${fmtNumber(outputPage.width)} ${fmtNumber(outputPage.height)}]${rotatePart} /Resources ${resourcesRef} 0 R /Contents ${contentRef} 0 R >>`
             );
             pageObjectNums.push(pageRef);
           }
@@ -2025,7 +2164,7 @@
           return this.writer.toBytes(catalogNum);
         }
 
-        impose(pagesPerSheet, paddingMode, enableThreePageSpecialMode, studentCount) {
+        impose(pagesPerSheet, paddingMode, enableThreePageSpecialMode, studentCount, autoOrientationEnabled) {
           const pageCount = this.source.getPageCount();
           if (!pageCount) throw new Error("Die PDF enthält keine Seiten.");
           if (enableThreePageSpecialMode && pageCount !== 3) {
@@ -2060,13 +2199,17 @@
                 }
               }
 
+              const placements = [
+                { pageInfo: leftPage, x: 0, y: 0, w: halfWidth, h: outHeight },
+                { pageInfo: rightPage, x: halfWidth, y: 0, w: halfWidth, h: outHeight }
+              ];
+              const displayRotation = this._computeDisplayRotationForPlacements(placements, autoOrientationEnabled);
+
               layout.pages.push({
                 width: outWidth,
                 height: outHeight,
-                placements: [
-                  { pageInfo: leftPage, x: 0, y: 0, w: halfWidth, h: outHeight },
-                  { pageInfo: rightPage, x: halfWidth, y: 0, w: halfWidth, h: outHeight }
-                ]
+                placements,
+                displayRotation
               });
             }
           } else if ([4, 6, 8].includes(pagesPerSheet)) {
@@ -2106,18 +2249,20 @@
                 const y = cellHeight * (rows - 1 - row);
                 return { pageInfo, x, y, w: cellWidth, h: cellHeight };
               });
+              const displayRotation = this._computeDisplayRotationForPlacements(placements, autoOrientationEnabled);
 
               layout.pages.push({
                 width: outWidth,
                 height: outHeight,
-                placements
+                placements,
+                displayRotation
               });
             }
           } else {
             throw new Error("Ungültige Auswahl für Seiten pro Blatt.");
           }
 
-          return this._buildOutputPdf(layout);
+          return this._buildOutputPdf(layout, autoOrientationEnabled);
         }
       }
 
@@ -2146,6 +2291,35 @@
         }
 
         return copyCount;
+      }
+
+      function chooseBestSlotOrientation(pageWidth, pageHeight, slotWidth, slotHeight, autoOrientationEnabled) {
+        const normalScale = Math.min(slotWidth / pageWidth, slotHeight / pageHeight);
+        if (!autoOrientationEnabled) {
+          return {
+            rotate90: false,
+            scale: normalScale,
+            orientedWidth: pageWidth,
+            orientedHeight: pageHeight
+          };
+        }
+
+        const rotatedScale = Math.min(slotWidth / pageHeight, slotHeight / pageWidth);
+        if (rotatedScale > normalScale + 1e-9) {
+          return {
+            rotate90: true,
+            scale: rotatedScale,
+            orientedWidth: pageHeight,
+            orientedHeight: pageWidth
+          };
+        }
+
+        return {
+          rotate90: false,
+          scale: normalScale,
+          orientedWidth: pageWidth,
+          orientedHeight: pageHeight
+        };
       }
 
       function detectUnsupportedLegacyFeatures(bytes) {
@@ -2188,7 +2362,7 @@
         }
       }
 
-      async function imposeWithPdfLib(sourceDoc, pagesPerSheet, paddingMode, enableThreePageSpecialMode, studentCount) {
+      async function imposeWithPdfLib(sourceDoc, pagesPerSheet, paddingMode, enableThreePageSpecialMode, studentCount, autoOrientationEnabled) {
         const PDFLib = window.PDFLib;
         const pageCount = sourceDoc.getPageCount();
         if (!pageCount) throw new Error("Die PDF enthaelt keine Seiten.");
@@ -2211,16 +2385,30 @@
         const outputDoc = await PDFLib.PDFDocument.create();
         const embeddedPages = await outputDoc.embedPages(sourcePages);
 
-        function drawPlacement(outputPage, pageIndex, x, y, w, h) {
+        function drawPlacement(outputPage, pageIndex, x, y, w, h, slotRotations) {
           if (pageIndex == null) return;
           const embedded = embeddedPages[pageIndex];
           if (!embedded) throw new Error("Seiteneinbettung fehlgeschlagen.");
 
-          const scale = Math.min(w / embedded.width, h / embedded.height);
-          const drawWidth = embedded.width * scale;
-          const drawHeight = embedded.height * scale;
+          const fit = chooseBestSlotOrientation(embedded.width, embedded.height, w, h, autoOrientationEnabled);
+          if (slotRotations) slotRotations.push(fit.rotate90 ? 90 : 0);
+          const baseWidth = embedded.width * fit.scale;
+          const baseHeight = embedded.height * fit.scale;
+          const drawWidth = fit.orientedWidth * fit.scale;
+          const drawHeight = fit.orientedHeight * fit.scale;
           const drawX = x + (w - drawWidth) / 2;
           const drawY = y + (h - drawHeight) / 2;
+
+          if (fit.rotate90) {
+            outputPage.drawPage(embedded, {
+              x: drawX + baseHeight,
+              y: drawY,
+              width: baseWidth,
+              height: baseHeight,
+              rotate: PDFLib.degrees(90)
+            });
+            return;
+          }
 
           outputPage.drawPage(embedded, {
             x: drawX,
@@ -2228,6 +2416,12 @@
             width: drawWidth,
             height: drawHeight
           });
+        }
+
+        function computeUniformDisplayRotation(slotRotations) {
+          if (!slotRotations.length) return null;
+          const first = slotRotations[0];
+          return slotRotations.every((value) => value === first) ? first : null;
         }
 
         if (enableThreePageSpecialMode || pagesPerSheet === 2) {
@@ -2257,8 +2451,11 @@
             }
 
             const outputPage = outputDoc.addPage([outWidth, outHeight]);
-            drawPlacement(outputPage, leftIndex, 0, 0, halfWidth, outHeight);
-            drawPlacement(outputPage, rightIndex, halfWidth, 0, halfWidth, outHeight);
+            const slotRotations = [];
+            drawPlacement(outputPage, leftIndex, 0, 0, halfWidth, outHeight, slotRotations);
+            drawPlacement(outputPage, rightIndex, halfWidth, 0, halfWidth, outHeight, slotRotations);
+            const displayRotation = computeUniformDisplayRotation(slotRotations);
+            if (displayRotation != null) outputPage.setRotation(PDFLib.degrees(displayRotation));
           }
         } else if ([4, 6, 8].includes(pagesPerSheet)) {
           let indices;
@@ -2287,6 +2484,7 @@
             const cellWidth = outWidth / 2;
             const cellHeight = outHeight / rows;
             const outputPage = outputDoc.addPage([outWidth, outHeight]);
+            const slotRotations = [];
 
             for (let slotIndex = 0; slotIndex < chunk.length; slotIndex += 1) {
               const pageIndex = chunk[slotIndex];
@@ -2294,8 +2492,10 @@
               const col = slotIndex % 2;
               const x = col * cellWidth;
               const y = cellHeight * (rows - 1 - row);
-              drawPlacement(outputPage, pageIndex, x, y, cellWidth, cellHeight);
+              drawPlacement(outputPage, pageIndex, x, y, cellWidth, cellHeight, slotRotations);
             }
+            const displayRotation = computeUniformDisplayRotation(slotRotations);
+            if (displayRotation != null) outputPage.setRotation(PDFLib.degrees(displayRotation));
           }
         } else {
           throw new Error("Ungueltige Auswahl fuer Seiten pro Blatt.");
@@ -2320,8 +2520,10 @@
 
       function buildAppendOutputName(files) {
         const firstBaseName = getBaseName(files[0]?.name || "PDF");
-        if (files.length === 1) return `Zusammengefuegt - ${firstBaseName}.pdf`;
-        return `Zusammengefuegt - ${firstBaseName} + ${files.length - 1}.pdf`;
+        const secondBaseName = getBaseName(files[1]?.name || "PDF");
+        const hasMore = files.length > 2;
+        const morePart = hasMore ? " + Weitere" : "";
+        return `Zusammengeführt ${firstBaseName} + ${secondBaseName}${morePart}.pdf`;
       }
 
       function getPaddingModeValue() {
@@ -2348,7 +2550,7 @@
       }
 
       function setAppendTotalPagesText(value) {
-        ui.appendTotalPages.textContent = `Gesamtanzahl an Seiten: ${value}`;
+        ui.appendTotalPages.textContent = `(Gesamtseitenanzahl: ${value})`;
       }
 
       function getAppendTotalPagesFromCache() {
@@ -2416,22 +2618,18 @@
       }
 
       function renderAppendFileList() {
-        const fragment = document.createDocumentFragment();
+        const inputFragment = document.createDocumentFragment();
         appendFiles.forEach((file, index) => {
           const row = document.createElement("div");
           row.className = "file-item";
-          row.draggable = true;
+          row.draggable = false;
           row.dataset.fileIndex = String(index);
-          row.title = "Reihenfolge per Drag-and-Drop aendern";
-
-          const dragHint = document.createElement("span");
-          dragHint.className = "file-drag";
-          dragHint.textContent = "⋮⋮";
-          dragHint.setAttribute("aria-hidden", "true");
+          row.title = file.name;
 
           const name = document.createElement("span");
           name.className = "file-item-name";
-          name.textContent = `${index + 1}. ${file.name}`;
+          name.textContent = file.name;
+          if (file === selectedFile) name.classList.add("selected");
 
           const removeButton = document.createElement("button");
           removeButton.type = "button";
@@ -2442,7 +2640,29 @@
           removeButton.textContent = "🗑";
           removeButton.draggable = false;
 
-          row.append(dragHint, name, removeButton);
+          row.append(name, removeButton);
+          inputFragment.append(row);
+        });
+        ui.inputFileList.replaceChildren(inputFragment);
+
+        const fragment = document.createDocumentFragment();
+        appendFiles.forEach((file, index) => {
+          const row = document.createElement("div");
+          row.className = "file-item";
+          row.draggable = true;
+          row.dataset.fileIndex = String(index);
+          row.title = "Reihenfolge per Drag-and-Drop ändern";
+
+          const dragHint = document.createElement("span");
+          dragHint.className = "file-drag";
+          dragHint.textContent = "⋮⋮";
+          dragHint.setAttribute("aria-hidden", "true");
+
+          const name = document.createElement("span");
+          name.className = "file-item-name";
+          name.textContent = `${index + 1}. ${file.name}`;
+
+          row.append(dragHint, name);
           fragment.append(row);
         });
 
@@ -2469,6 +2689,7 @@
         }
 
         if (!accepted.length) return;
+
         appendFiles = appendFiles.concat(accepted);
         renderAppendFileList();
         await setSelectedFile(accepted[0]);
@@ -2576,6 +2797,7 @@
         ui.dropZone.classList.toggle("awaiting-file", !enabled);
         ui.dropHint.classList.toggle("hidden", enabled);
         syncPagesButtonsDisabledState();
+        ui.autoOrientationToggle.disabled = !enabled;
         ui.studentCount.disabled = !enabled;
         for (const radio of ui.paddingModes) {
           radio.disabled = !enabled;
@@ -2632,13 +2854,27 @@
           if (effectivePaddingMode === "lcm" && !studentCount) {
             throw new Error("Für 'Auffüllen nach Anzahl der Lernenden' muss eine Anzahl Lernende eingetragen sein.");
           }
+          const autoOrientationEnabled = ui.autoOrientationToggle.checked;
 
           let outBytes;
           if (engine === "pdf-lib") {
-            outBytes = await imposeWithPdfLib(source, pagesPerSheet, effectivePaddingMode, specialThreeModeEnabled, studentCount);
+            outBytes = await imposeWithPdfLib(
+              source,
+              pagesPerSheet,
+              effectivePaddingMode,
+              specialThreeModeEnabled,
+              studentCount,
+              autoOrientationEnabled
+            );
           } else {
             const imposer = new OfflineImposer(source);
-            outBytes = imposer.impose(pagesPerSheet, effectivePaddingMode, specialThreeModeEnabled, studentCount);
+            outBytes = imposer.impose(
+              pagesPerSheet,
+              effectivePaddingMode,
+              specialThreeModeEnabled,
+              studentCount,
+              autoOrientationEnabled
+            );
           }
 
           const copyCount = deriveCopyCount(
@@ -2657,7 +2893,7 @@
             if (shareResult.status === "cancelled") {
               showResultDialog(`PDF wurde erstellt, Teilen wurde abgebrochen.\n${outputName}`, "warn", "Hinweis");
             } else {
-              showResultDialog(`PDF erfolgreich erstellt.\n${outputName}`, "ok", "");
+              showResultDialog("PDF erstellt.", "ok", "");
             }
             return;
           }
@@ -2668,8 +2904,8 @@
           anchor.download = outputName;
           anchor.click();
 
-          setTimeout(() => URL.revokeObjectURL(url), 10_000);
-          showResultDialog(`PDF erfolgreich erstellt.\n${outputName}`, "ok", "");
+          setTimeout(() => URL.revokeObjectURL(url), 120_000);
+          showResultDialog("PDF erstellt.", "ok", "", url);
         } catch (error) {
           console.error(error);
           if (maybeShowMacOSPermissionHint(error)) return;
@@ -2728,7 +2964,7 @@
             if (shareResult.status === "cancelled") {
               showResultDialog(`PDF wurde erstellt, Teilen wurde abgebrochen.\n${outputName}`, "warn", "Hinweis");
             } else {
-              showResultDialog(`PDFs erfolgreich zusammengefuehrt.\n${outputName}`, "ok", "");
+              showResultDialog("PDFs zusammengeführt.", "ok", "");
             }
             return;
           }
@@ -2740,7 +2976,7 @@
           anchor.click();
 
           setTimeout(() => URL.revokeObjectURL(url), 10_000);
-          showResultDialog(`PDFs erfolgreich zusammengefuehrt.\n${outputName}`, "ok", "");
+          showResultDialog("PDFs zusammengeführt.", "ok", "");
         } catch (error) {
           console.error(error);
           if (maybeShowMacOSPermissionHint(error)) return;
@@ -2759,12 +2995,16 @@
           return;
         }
         selectedFile = file;
-        ui.fileName.textContent = file.name;
+        ui.selectedFileNameLine.textContent = file.name;
+        renderAppendFileList();
         setOptionsEnabled(true);
         await updateSpecialThreeModeAvailability(file);
       }
 
-      ui.dropZone.addEventListener("click", () => openSharedPdfPicker());
+      ui.dropZone.addEventListener("click", (event) => {
+        if (event.target.closest("#inputFileList")) return;
+        openSharedPdfPicker();
+      });
       ui.dropZone.addEventListener("keydown", (event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -2848,15 +3088,33 @@
         appendDropIndex = null;
         clearAppendDropMarkers();
       });
-      ui.appendFileList.addEventListener("click", (event) => {
-        const removeButton = event.target.closest("button[data-remove-index]");
-        if (!removeButton) return;
+      ui.inputFileList.addEventListener("click", (event) => {
         event.stopPropagation();
-        const index = Number(removeButton.dataset.removeIndex);
+        const removeButton = event.target.closest("button[data-remove-index]");
+        if (removeButton) {
+          const index = Number(removeButton.dataset.removeIndex);
+          if (!Number.isInteger(index)) return;
+          if (index < 0 || index >= appendFiles.length) return;
+          const [removedFile] = appendFiles.splice(index, 1);
+          if (removedFile === selectedFile) {
+            selectedFile = appendFiles[0] || null;
+            if (selectedFile) {
+              void setSelectedFile(selectedFile);
+            } else {
+              ui.selectedFileNameLine.textContent = "Keine Datei ausgewählt";
+              setOptionsEnabled(false);
+            }
+          }
+          renderAppendFileList();
+          return;
+        }
+
+        const row = event.target.closest(".file-item[data-file-index]");
+        if (!row) return;
+        const index = Number(row.dataset.fileIndex);
         if (!Number.isInteger(index)) return;
         if (index < 0 || index >= appendFiles.length) return;
-        appendFiles.splice(index, 1);
-        renderAppendFileList();
+        void setSelectedFile(appendFiles[index]);
       });
 
       ui.studentCount.addEventListener("input", () => {
@@ -2922,8 +3180,14 @@
         syncDialogUiState();
       });
       ui.resultCloseButton.addEventListener("click", hideResultDialog);
+      ui.resultOpenButton.addEventListener("click", () => {
+        if (!resultOpenUrl) return;
+        window.open(resultOpenUrl, "_blank", "noopener,noreferrer");
+      });
       ui.resultDialog.addEventListener("close", () => {
         ui.resultDialog.classList.add("hidden");
+        resultOpenUrl = null;
+        ui.resultOpenButton.classList.add("hidden");
         syncDialogUiState();
       });
       ui.busyDialog.addEventListener("close", () => {
